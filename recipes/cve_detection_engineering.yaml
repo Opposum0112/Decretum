@@ -1,0 +1,28 @@
+id: cve-detection-engineering
+name: CVE detection engineering syscall capture
+version: "1.0"
+role: detection_engineer
+objective: Capture process and network telemetry for offline detection research.
+harness: headless
+compute:
+  provider: lima
+  base_image: https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+  cpus: 2
+  memory: 4GiB
+  network: shared
+  allow_host_mounts: false
+instrumentation:
+  tools: [tetragon, bpftrace, strace, tcpdump, tshark]
+  trace_flags: [execve, connect]
+evidence:
+  artifact_paths: [/tmp/tetragon.json, /tmp/trace.log, /tmp/capture.pcap]
+  hash_algorithm: sha256
+  manifest: true
+workload:
+  command: echo 'detection research placeholder'
+  timeout_seconds: 300
+reports:
+  - kind: sigma
+    template: syscall-detection
+  - kind: markdown
+    template: attack-mapping
