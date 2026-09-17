@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 Role = Literal["threat_researcher", "supply_chain_auditor", "detection_engineer", "vulnerability_exploit_researcher"]
-Provider = Literal["lima", "podman"]
+Provider = Literal["lima", "podman", "docker"]
 Harness = Literal["goose", "pi", "headless"]
 Tool = Literal["tetragon", "bpftrace", "strace", "tcpdump", "tshark"]
 
