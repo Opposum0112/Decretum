@@ -15,6 +15,7 @@ enums:
     permissible_values:
       lima: {}
       podman: {}
+      docker: {}
   HashAlgorithm:
     permissible_values:
       sha256: {}
