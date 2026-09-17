@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://decretum.dev/schema/security-research.json",
+  "title": "Decretum Security Research Recipe",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "version", "role", "objective", "harness", "compute", "evidence", "workload"],
+  "properties": {
+    "id": {"type": "string"},
+    "name": {"type": "string"},
+    "version": {"type": "string"},
+    "role": {"enum": ["threat_researcher", "supply_chain_auditor", "detection_engineer", "vulnerability_exploit_researcher"]},
+    "objective": {"type": "string"},
+    "harness": {"enum": ["goose", "pi", "headless"]},
+    "compute": {"$ref": "#/$defs/compute"},
+    "instrumentation": {"$ref": "#/$defs/instrumentation"},
+    "evidence": {"$ref": "#/$defs/evidence"},
+    "workload": {"$ref": "#/$defs/workload"},
+    "references": {"type": "array", "items": {"type": "string"}},
+    "reports": {"type": "array", "items": {"type": "object", "required": ["kind", "template"], "properties": {"kind": {"type": "string"}, "template": {"type": "string"}}, "additionalProperties": false}}
+  },
+  "$defs": {
+    "compute": {"type": "object", "additionalProperties": false, "required": ["provider", "base_image", "cpus", "memory"], "properties": {"provider": {"enum": ["lima", "podman"]}, "base_image": {"type": "string"}, "cpus": {"type": "integer", "minimum": 1}, "memory": {"type": "string"}, "network": {"type": "string"}, "allow_host_mounts": {"const": false}}},
+    "instrumentation": {"type": "object", "properties": {"tools": {"type": "array", "items": {"enum": ["tetragon", "bpftrace", "strace", "tcpdump", "tshark"]}}, "trace_flags": {"type": "array", "items": {"type": "string"}}}},
+    "evidence": {"type": "object", "required": ["artifact_paths"], "properties": {"artifact_paths": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "hash_algorithm": {"const": "sha256"}, "manifest": {"type": "boolean"}}},
+    "workload": {"type": "object", "required": ["command"], "properties": {"command": {"type": "string"}, "timeout_seconds": {"type": "integer", "minimum": 1}}}
+  }
+}
