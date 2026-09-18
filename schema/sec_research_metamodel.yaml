@@ -131,7 +131,9 @@ classes:
       name: {range: string, required: true}
       version: {range: string, required: true}
       role: {range: ResearcherRole, required: true}
+      role_definition: {range: RoleSpec}
       skills: {range: SkillSpec, multivalued: true}
+      skill_catalog: {range: SkillSpec, multivalued: true}
       capability_catalog: {range: CapabilitySpec, multivalued: true}
       objective: {range: string, required: true}
       inputs: {range: InputSpec}
@@ -180,6 +182,7 @@ classes:
       skills: {range: string, multivalued: true}
       default_capabilities: {range: string, multivalued: true}
       allowed_tools: {range: string, multivalued: true}
+      enabled: {range: boolean, ifabsent: true}
 
   InputSpec:
     attributes:
