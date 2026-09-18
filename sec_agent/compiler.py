@@ -101,6 +101,8 @@ def compile_recipe(recipe: dict[str, Any], artifact_dir: Path) -> ExecutionContr
         "inputs":recipe.get("inputs",{}),"environment":recipe["environment"],
         "roles":[{"id":recipe["role"],"definition":role_definition,"skills":role_definition.get("skills",[s.get("id") for s in skills]),"default_capabilities":role_definition.get("default_capabilities",[]),"allowed_tools":role_definition.get("allowed_tools",[])}],
         "skills":skills,"skill_catalog":recipe.get("skill_catalog",[]),"capability_catalog":recipe.get("capability_catalog",[]),
+        "provider_registry": "schema/provider_registry.yaml",
+        "provider_interfaces": ["mcp", "api", "tool"],
         "capability_graph":[{"skill":s.get("id"),"capabilities":s.get("capabilities",[]) or [],"tools":s.get("tools",[]) or [],"evidence_inputs":s.get("evidence_inputs",[]) or [],"evidence_outputs":s.get("evidence_outputs",[]) or []} for s in skills],
         "orchestration":recipe["environment"].get("orchestration",{"executor":"codex","mode":"interactive"}),
         "capabilities":_capabilities(recipe),"policy":recipe["policy"],"evidence":recipe["evidence"],"completion":recipe["completion"],
