@@ -14,8 +14,11 @@ enums:
       vulnerability_exploit_researcher: {}
   EnvironmentType:
     permissible_values:
-      openai_hosted: {}
-      self_hosted: {}
+      local: {}
+  SandboxBackend:
+    permissible_values:
+      unix: {}
+      docker: {}
   InstrumentationTool:
     permissible_values:
       tetragon: {}
@@ -60,14 +63,19 @@ classes:
 
   EnvironmentSpec:
     attributes:
-      type: {range: EnvironmentType, ifabsent: openai_hosted}
+      type: {range: EnvironmentType, ifabsent: local}
+      sandbox: {range: SandboxSpec, required: true}
       network: {range: NetworkSpec}
       privileged: {range: boolean, ifabsent: false}
-      host_mounts: {range: boolean, ifabsent: false}
-      workspace_directory: {range: string}
-      web_search: {range: boolean, ifabsent: false}
       programmatic_tool_calling: {range: boolean, ifabsent: true}
       mcp: {range: McpServerSpec, multivalued: true}
+
+  SandboxSpec:
+    attributes:
+      backend: {range: SandboxBackend, required: true}
+      image: {range: string}
+      workspace_directory: {range: string}
+      inherit_host_environment: {range: boolean, ifabsent: false}
 
   NetworkSpec:
     attributes:
