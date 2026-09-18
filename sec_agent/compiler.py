@@ -46,6 +46,7 @@ def compile_recipe(recipe: dict[str, Any], artifact_dir: Path) -> ExecutionContr
         "environment": recipe["environment"],
         "roles": [{"id": recipe["role"], "skills": [s.get("id") for s in recipe.get("skills", []) or []]}],
         "skills": recipe.get("skills", []),
+        "capabilities": recipe.get("capabilities", []) or [cap for skill in (recipe.get("skills", []) or []) for cap in (skill.get("capabilities", []) or [])],
         "orchestration": recipe["environment"].get("orchestration", {"executor": "codex", "mode": "interactive"}),
         "capabilities": capabilities,
         "policy": recipe["policy"], "evidence": recipe["evidence"],
