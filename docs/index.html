@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Decretum — a declarative security-research contract and capability platform.">
+<title>Decretum — Security Research, Declaratively</title>
+<style>
+:root{--bg:#070a0f;--panel:#0d121a;--panel2:#111925;--text:#edf2f7;--muted:#98a6b8;--line:#202b3a;--accent:#73e0b5;--accent2:#7aa7ff;--max:1120px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 15% 0%,#14251f 0,transparent 35%),radial-gradient(circle at 90% 10%,#15213b 0,transparent 32%),var(--bg);color:var(--text);font:16px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+a{color:inherit;text-decoration:none}.wrap{max-width:var(--max);margin:auto;padding:0 24px}.nav{height:72px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff0d}.brand{font-weight:800;letter-spacing:.08em}.brand span{color:var(--accent)}.links{display:flex;gap:22px;color:var(--muted);font-size:14px}.links a:hover{color:var(--text)}
+.hero{padding:105px 0 85px}.eyebrow{display:inline-flex;gap:8px;align-items:center;border:1px solid #73e0b533;background:#73e0b50d;color:var(--accent);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700}.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px var(--accent)}
+h1{font-size:clamp(48px,8vw,92px);line-height:.98;letter-spacing:-.055em;margin:24px 0 24px;max-width:900px}h1 em{font-style:normal;color:var(--accent)}.lead{font-size:clamp(18px,2.4vw,24px);color:var(--muted);max-width:790px}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px}.btn{padding:12px 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-weight:700}.btn.primary{background:var(--accent);border-color:var(--accent);color:#07110d}.btn:hover{transform:translateY(-1px)}
+.hero-card{margin-top:60px;border:1px solid var(--line);background:#0b1119dd;border-radius:18px;padding:24px;box-shadow:0 24px 80px #0008}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:center}.node{padding:18px 12px;text-align:center;border:1px solid var(--line);background:var(--panel2);border-radius:12px;font-weight:750}.node small{display:block;color:var(--muted);font-weight:500;margin-top:4px}.arrow{text-align:center;color:var(--accent2);font-size:22px}
+section{padding:76px 0}.section-head{max-width:700px;margin-bottom:30px}.kicker{text-transform:uppercase;letter-spacing:.16em;color:var(--accent);font-size:12px;font-weight:800}h2{font-size:38px;letter-spacing:-.03em;margin:8px 0 12px}.sub{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{border:1px solid var(--line);background:linear-gradient(180deg,#101823,#0b1017);border-radius:16px;padding:24px}.card h3{margin:0 0 8px;font-size:19px}.card p{margin:0;color:var(--muted)}.num{color:var(--accent);font:700 13px ui-monospace,monospace}
+pre{overflow:auto;background:#05080c;border:1px solid var(--line);border-radius:14px;padding:22px;color:#d8e1eb}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}.split{display:grid;grid-template-columns:1fr 1fr;gap:20px}.quote{border-left:3px solid var(--accent);padding-left:20px;font-size:24px;line-height:1.4}.footer{padding:42px 0 65px;border-top:1px solid var(--line);color:var(--muted);display:flex;justify-content:space-between;gap:20px}
+@media(max-width:800px){.links{display:none}.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}.grid,.split{grid-template-columns:1fr}.hero{padding-top:70px}h1{font-size:54px}.footer{display:block}}
+</style>
+</head>
+<body>
+<header class="wrap nav"><a class="brand" href="#top">DECRET<span>UM</span></a><nav class="links"><a href="#model">Model</a><a href="#workflow">Workflow</a><a href="#capabilities">Capabilities</a><a href="https://github.com/Opposum0112/Decretum">GitHub ↗</a></nav></header>
+<main id="top">
+<section class="wrap hero">
+<div class="eyebrow"><span class="dot"></span> DECLARATIVE SECURITY RESEARCH</div>
+<h1>Research with a <em>contract.</em><br>Explore with an agent.</h1>
+<p class="lead">Decretum defines the ontology, capabilities and boundaries of a security investigation. An autonomous researcher can then compose validated skills, run authorized experiments, preserve evidence and continue the investigation from durable state.</p>
+<div class="actions"><a class="btn primary" href="https://github.com/Opposum0112/Decretum">Explore the repository</a><a class="btn" href="#workflow">See how it works</a></div>
+<div class="hero-card"><div class="flow">
+<div class="node">Researcher<small>question</small></div><div class="arrow">→</div>
+<div class="node">Recipe<small>intent + boundary</small></div><div class="arrow">→</div>
+<div class="node">Contract<small>validated + frozen</small></div>
+</div><div style="height:10px"></div><div class="flow">
+<div class="node">Autonomous Agent<small>reason + compose</small></div><div class="arrow">→</div>
+<div class="node">Tools / MCP<small>authorized execution</small></div><div class="arrow">→</div>
+<div class="node">Evidence → Findings<small>persistent state</small></div>
+</div></div>
+</section>
+
+<section id="model" class="wrap">
+<div class="section-head"><div class="kicker">The model</div><h2>Four boundaries. One research loop.</h2><p class="sub">Decretum separates what can be done from what a particular investigation permits, then lets the researcher operate inside that boundary.</p></div>
+<div class="grid">
+<div class="card"><span class="num">01 / SCHEMA</span><h3>What is possible</h3><p>LinkML defines roles, skills, capabilities, evidence and references as reusable research vocabulary.</p></div>
+<div class="card"><span class="num">02 / RECIPE</span><h3>What is allowed</h3><p>A recipe declares the investigation's required capabilities, constraints and execution boundary.</p></div>
+<div class="card"><span class="num">03 / CONTRACT</span><h3>What is frozen</h3><p>Validation and compilation turn the recipe into a machine-readable research contract.</p></div>
+<div class="card"><span class="num">04 / AGENT</span><h3>How to investigate</h3><p>The autonomous researcher selects and composes declared skills instead of silently expanding scope.</p></div>
+<div class="card"><span class="num">05 / PROVIDERS</span><h3>How capabilities run</h3><p>MCP, APIs and local tools can implement the same semantic capability interchangeably.</p></div>
+<div class="card"><span class="num">06 / STATE</span><h3>What survives</h3><p>Evidence, hypotheses, findings, experiments and reports remain available for continued research.</p></div>
+</div>
+</section>
+
+<section id="workflow" class="wrap">
+<div class="section-head"><div class="kicker">Research loop</div><h2>From question to evidence.</h2></div>
+<div class="split"><div>
+<p class="quote">“Schema = what is possible · Recipe = what this investigation allows · Contract = frozen boundary · Agent = researcher.”</p>
+<p class="sub">A capability can evolve independently of its implementation. New providers, integrations and model families can be registered without changing the meaning of existing recipes.</p>
+</div>
+<pre><code>Research question
+      ↓
+Research recipe
+      ↓
+LinkML validation
+      ↓
+Capability resolution
+      ↓
+Contract compilation
+      ↓
+Autonomous research
+      ↓
+Experiments + evidence
+      ↓
+Findings + report
+      ↓
+Persistent research state
+      ↺</code></pre></div>
+</section>
+
+<section id="capabilities" class="wrap">
+<div class="section-head"><div class="kicker">Capability fabric</div><h2>Semantic capabilities, interchangeable implementations.</h2><p class="sub">The recipe does not need to know whether a capability is provided by an MCP server, API, CLI tool or another registered integration.</p></div>
+<div class="grid">
+<div class="card"><h3>Process observation</h3><p>Sysdig · Falco · Tracee · Tetragon · bpftrace · BCC · strace · auditd</p></div>
+<div class="card"><h3>Network capture</h3><p>tcpdump · tshark · Wireshark · Zeek · Suricata · Snort</p></div>
+<div class="card"><h3>Binary analysis</h3><p>Ghidra · radare2 · binwalk · readelf · objdump</p></div>
+<div class="card"><h3>Memory analysis</h3><p>Volatility · Rekall and other registered implementations</p></div>
+<div class="card"><h3>Local compute</h3><p>Unix · Docker · Podman · Lima · Incus · LXC · KVM · Firecracker · QEMU</p></div>
+<div class="card"><h3>Research references</h3><p>Frameworks · advisories · vulnerability databases · papers · incident reports</p></div>
+</div>
+</section>
+
+<section class="wrap">
+<div class="hero-card"><div class="kicker">Start here</div><h2 style="margin-top:8px">Build the boundary. Then let the research move.</h2><p class="sub">Validate a recipe, resolve capability readiness, compile the contract and begin a research session.</p><div class="actions"><a class="btn primary" href="https://github.com/Opposum0112/Decretum#quick-start">Quick start</a><a class="btn" href="https://github.com/Opposum0112/Decretum/blob/main/README.md">Read the docs</a></div></div>
+</section>
+</main>
+<footer class="wrap footer"><div><strong style="color:var(--text)">Decretum</strong><br>Declarative security research contracts.</div><div><a href="https://github.com/Opposum0112/Decretum">GitHub</a> · <a href="https://github.com/Opposum0112/Decretum/blob/main/README.md">Documentation</a></div></footer>
+</body></html>
