@@ -10,6 +10,7 @@ from rich.table import Table
 
 from .compiler import compile_recipe, write_contract
 from .openai_runner import create_session, save_session\nfrom .research_state import append_event, evidence_context
+from .resolver import resolve_capabilities
 from .validator import validate_recipe
 
 app = typer.Typer(help="Decretum: declarative local security research executed by Codex")
@@ -31,6 +32,15 @@ def validate(recipe: Path) -> None:
         table.add_row("OK", "Recipe is valid and ready for local execution")
     console.print(table)
     raise typer.Exit(1 if errors else 0)
+
+
+@app.command("resolve")
+def resolve(recipe: Path) -> None:
+    """Resolve capabilities and show provider/harness/model readiness without executing."""
+    data = __import__("sec_agent.validator", fromlist=["load_recipe"]).load_recipe(recipe)
+    result = resolve_capabilities(data)
+    console.print_json(json.dumps(result))
+    raise typer.Exit(0 if result.get("status") == "ready" else 1)
 
 
 @app.command("compile")
