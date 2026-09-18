@@ -12,7 +12,7 @@ from .compiler import compile_recipe, write_contract
 from .openai_runner import create_session, save_session
 from .validator import validate_recipe
 
-app = typer.Typer(help="Decretum: local security research with OpenAI Agents SDK")
+app = typer.Typer(help="Decretum: declarative local security research executed by Codex")
 console = Console()
 
 
@@ -53,7 +53,7 @@ def compile_contract(recipe: Path, output: Path | None = None) -> None:
 
 @app.command()
 def run(recipe: Path, model: str | None = None, dry_run: bool = True) -> None:
-    """Compile and, unless dry-run, execute inside the declared local sandbox."""
+    """Compile and, unless dry-run, execute the contract through local Codex."""
     data, errors, findings = validate_recipe(recipe)
     if errors:
         for item in errors:
@@ -77,7 +77,7 @@ def run(recipe: Path, model: str | None = None, dry_run: bool = True) -> None:
         model=model,
     )
     session_path = save_session(session, contract.artifact_dir)
-    console.print("Local sandbox research completed.")
+    console.print("Codex research completed in the local workspace.")
     console.print(f"Saved: {session_path}")
 
 
