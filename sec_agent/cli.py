@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.table import Table
 
 from .compiler import compile_recipe, write_contract
-from .openai_runner import create_session, save_session
+from .openai_runner import create_session, save_session\nfrom .research_state import append_event, evidence_context
 from .validator import validate_recipe
 
 app = typer.Typer(help="Decretum: declarative local security research executed by Codex")
