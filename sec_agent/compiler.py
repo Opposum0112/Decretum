@@ -5,6 +5,68 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+INSTRUMENTATION_CAPABILITIES = {
+  "sysdig": {"process.observe","filesystem.observe","network.observe","syscall.observe","container.observe"},
+  "falco": {"process.observe","filesystem.observe","network.observe","syscall.observe","container.observe","detection.observe"},
+  "tracee": {"process.observe","filesystem.observe","network.observe","syscall.observe","container.observe","kernel.trace"},
+  "tetragon": {"process.observe","network.observe","filesystem.observe","syscall.observe","container.observe","kernel.trace"},
+  "bpftrace": {"process.observe","filesystem.observe","network.observe","syscall.observe","kernel.trace"},
+  "bcc": {"process.observe","filesystem.observe","network.observe","syscall.observe","kernel.trace"},
+  "strace": {"process.observe","syscall.observe"},
+  "ltrace": {"process.observe","library.observe"},
+  "perf": {"process.observe","kernel.trace","performance.observe"},
+  "ftrace": {"kernel.trace","syscall.observe"},
+  "auditd": {"process.observe","filesystem.observe","identity.observe","syscall.observe"},
+  "auditbeat": {"process.observe","filesystem.observe","network.observe","identity.observe"},
+  "osquery": {"process.observe","filesystem.observe","network.observe","identity.observe","configuration.observe"},
+  "tcpdump": {"network.observe","network.capture"},
+  "tshark": {"network.observe","network.capture","protocol.analyze"},
+  "dumpcap": {"network.capture"},
+  "wireshark": {"network.observe","network.capture","protocol.analyze"},
+  "zeek": {"network.observe","network.capture","protocol.analyze","network.metadata"},
+  "suricata": {"network.observe","network.capture","network.detection"},
+  "snort": {"network.observe","network.capture","network.detection"},
+  "conntrack": {"network.observe","network.connection_state"},
+  "nftables": {"network.observe","network.policy"},
+  "iptables": {"network.observe","network.policy"},
+  "ss": {"network.observe","network.connection_state"},
+  "dig": {"network.observe","dns.observe"},
+  "resolvectl": {"network.observe","dns.observe"},
+  "bpftool": {"kernel.inspect","kernel.trace"},
+  "opensnoop": {"filesystem.observe","process.observe"},
+  "execsnoop": {"process.observe","syscall.observe"},
+  "tcpconnect": {"network.observe","process.observe"},
+  "tcplife": {"network.observe","process.observe"},
+  "filetop": {"filesystem.observe","performance.observe"},
+  "biolatency": {"filesystem.observe","performance.observe"},
+  "runqlat": {"process.observe","performance.observe"},
+  "funccount": {"kernel.trace","performance.observe"},
+  "volatility": {"memory.acquire","memory.analyze"},
+  "rekall": {"memory.acquire","memory.analyze"},
+  "yara": {"artifact.scan","malware.analyze"},
+  "clamav": {"artifact.scan","malware.analyze"},
+  "ghidra": {"binary.analyze","reverse_engineer"},
+  "radare2": {"binary.analyze","reverse_engineer"},
+  "binwalk": {"artifact.analyze","binary.analyze"},
+  "strings": {"binary.inspect","artifact.analyze"},
+  "readelf": {"binary.inspect","binary.analyze"},
+  "objdump": {"binary.inspect","binary.analyze"},
+  "lsof": {"process.observe","filesystem.observe","network.observe"},
+  "nsenter": {"namespace.observe","process.observe"},
+  "capsh": {"identity.observe","capability.observe"},
+  "unshare": {"namespace.observe"}
+}
+COMPUTE_CAPABILITIES = {
+  "unix": {"compute.local","workspace.execute"},
+  "docker": {"compute.container","workspace.execute","compute.snapshot"},
+  "podman": {"compute.container","workspace.execute","compute.snapshot"},
+  "lima": {"compute.vm","workspace.execute","compute.snapshot"},
+  "incus": {"compute.container","compute.vm","workspace.execute","compute.snapshot"},
+  "lxc": {"compute.container","workspace.execute","compute.snapshot"},
+  "kvm": {"compute.vm","workspace.execute","compute.snapshot"},
+  "firecracker": {"compute.microvm","workspace.execute","compute.snapshot"},
+  "qemu": {"compute.vm","workspace.execute","compute.snapshot"}
+}
 @dataclass(frozen=True, slots=True)
 class ExecutionContract:
     contract_id: str
@@ -19,21 +81,13 @@ def _capabilities(recipe: dict[str, Any]) -> dict[str, list[str]]:
     if workload.get("command"):
         result.add("process.execute")
     for tool in instrumentation.get("tools", []) or []:
-        if tool in {"strace", "tetragon", "bpftrace"}:
-            result.add("process.observe")
-        if tool in {"tcpdump", "tshark"}:
-            result.update({"network.observe", "network.capture"})
-    for artifact in evidence.get("required", []) or []:
-        text = str(artifact).lower()
-        if any(x in text for x in ("pcap", "network", "dns")):
-            result.add("network.observe")
-        if any(x in text for x in ("proc", "process", "syscall")):
-            result.add("process.observe")
-        if any(x in text for x in ("file", "diff", "filesystem")):
-            result.add("filesystem.observe")
-    return {"required": sorted(result), "optional": [], "denied": [
-        "host.filesystem.write", "host.mount", "privileged.host_access", "unrestricted.network", "cloud.sandbox"
-    ]}
+        result.update(INSTRUMENTATION_CAPABILITIES.get(tool, set()))
+    environment = recipe.get("environment", {})
+    compute = environment.get("compute", {}) if isinstance(environment, dict) else {}
+    sandbox = environment.get("sandbox", {}) if isinstance(environment, dict) else {}
+    provider = compute.get("provider") or sandbox.get("backend")
+    result.update(COMPUTE_CAPABILITIES.get(provider, set()))
+
 
 def compile_recipe(recipe: dict[str, Any], artifact_dir: Path) -> ExecutionContract:
     capabilities = _capabilities(recipe)
