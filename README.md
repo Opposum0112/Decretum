@@ -225,7 +225,3 @@ tests/        Regression tests
 ## Project status
 
 The `refactor/openai-api` branch provides declarative research recipes, LinkML validation, deterministic contract compilation, reusable roles/skills/capabilities, local compute and instrumentation vocabulary, Codex research sessions, durable evidence and finding state, hypotheses, experiment requests, and security/threat-intelligence references.
-
-## Repository
-
-urlDecretum on GitHubhttps://github.com/Opposum0112/Decretum
