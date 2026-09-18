@@ -13,6 +13,8 @@ ROLE_VALUES = {
     "vulnerability_exploit_researcher",
 }
 TOOLS = {"tetragon", "bpftrace", "strace", "tcpdump", "tshark"}
+CAPABILITY_KINDS = {"artifact", "filesystem", "process", "network", "identity", "cloud", "container", "instrumentation", "analysis", "reporting"}
+CAPABILITY_RISKS = {"read", "observe", "collect", "execute", "write", "privileged", "network_access"}
 BACKENDS = {"unix", "docker"}
 
 
@@ -32,6 +34,65 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
 
     if recipe.get("role") not in ROLE_VALUES:
         errors.append(f"invalid role: {recipe.get('role')!r}")
+    skills = recipe.get("skills", []) or []
+    if not isinstance(skills, list):
+        errors.append("skills must be a list")
+        skills = []
+
+    declared_caps = recipe.get("capabilities", []) or []
+    if not isinstance(declared_caps, list):
+        errors.append("capabilities must be a list")
+        declared_caps = []
+
+    cap_by_id: dict[str, dict[str, Any]] = {}
+    for cap in declared_caps:
+        if not isinstance(cap, dict):
+            errors.append("each capability must be a mapping")
+            continue
+        cid = cap.get("id")
+        if not cid:
+            errors.append("capability.id is required")
+            continue
+        if cid in cap_by_id:
+            errors.append(f"duplicate capability id: {cid!r}")
+        cap_by_id[cid] = cap
+        if cap.get("kind") not in CAPABILITY_KINDS:
+            errors.append(f"invalid capability kind for {cid!r}: {cap.get('kind')!r}")
+        if cap.get("risk") not in CAPABILITY_RISKS:
+            errors.append(f"invalid capability risk for {cid!r}: {cap.get('risk')!r}")
+        if not cap.get("name") or not cap.get("description"):
+            errors.append(f"capability {cid!r} requires name and description")
+        for tool in cap.get("tools", []) or []:
+            if tool not in TOOLS:
+                errors.append(f"unsupported capability tool {tool!r} in {cid!r}")
+
+    for skill in skills:
+        if not isinstance(skill, dict):
+            errors.append("each skill must be a mapping")
+            continue
+        sid = skill.get("id")
+        if not sid:
+            errors.append("skill.id is required")
+            continue
+        if not skill.get("name") or not skill.get("kind") or not skill.get("description"):
+            errors.append(f"skill {sid!r} requires name, kind, and description")
+        for cap in skill.get("capabilities", []) or []:
+            if not isinstance(cap, dict):
+                errors.append(f"skill {sid!r} contains a non-mapping capability")
+                continue
+            cid = cap.get("id")
+            if not cid:
+                errors.append(f"skill {sid!r} capability.id is required")
+            elif cid not in cap_by_id:
+                errors.append(f"skill {sid!r} references undeclared capability {cid!r}")
+            else:
+                declared = cap_by_id[cid]
+                for field in ("kind", "risk"):
+                    if cap.get(field) and cap.get(field) != declared.get(field):
+                        errors.append(f"skill {sid!r} capability {cid!r} conflicts on {field}")
+        for tool in skill.get("tools", []) or []:
+            if tool not in TOOLS:
+                errors.append(f"unsupported skill tool {tool!r} in {sid!r}")
 
     environment = recipe.get("environment")
     if not isinstance(environment, dict):
