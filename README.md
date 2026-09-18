@@ -30,7 +30,7 @@ OpenAI Agents SDK
    +--> MCP / approved local tools
    |
    v
-observe -> hypothesize -> experiment -> evidence -> report
+observe -> hypothesize -> experiment -> evidence -> interactive analysis -> next experiment -> report
 ```
 
 The OpenAI API provides model reasoning. The local Agents SDK runtime owns sandbox execution. Commands and research artifacts do not need to be moved to a provider-managed execution environment.
