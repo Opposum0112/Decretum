@@ -12,6 +12,35 @@ enums:
       supply_chain_auditor: {}
       detection_engineer: {}
       vulnerability_exploit_researcher: {}
+      malware_researcher: {}
+      threat_intelligence_researcher: {}
+      cloud_security_researcher: {}
+      forensics_researcher: {}
+      vulnerability_researcher: {}
+      security_architect: {}
+
+  SkillKind:
+    permissible_values:
+      analysis: {}
+      investigation: {}
+      detection: {}
+      forensics: {}
+      threat_intelligence: {}
+      malware_analysis: {}
+      vulnerability_research: {}
+      cloud_security: {}
+      reverse_engineering: {}
+      network_analysis: {}
+      software_supply_chain: {}
+      reporting: {}
+
+  SkillExecutionMode:
+    permissible_values:
+      codex_native: {}
+      shell: {}
+      mcp: {}
+      script: {}
+      analyst_review: {}
   EnvironmentType:
     permissible_values:
       local: {}
@@ -79,6 +108,7 @@ classes:
       name: {range: string, required: true}
       version: {range: string, required: true}
       role: {range: ResearcherRole, required: true}
+      skills: {range: SkillSpec, multivalued: true}
       objective: {range: string, required: true}
       inputs: {range: InputSpec}
       environment: {range: EnvironmentSpec, required: true}
@@ -93,6 +123,28 @@ classes:
       hypotheses: {range: Hypothesis, multivalued: true}
       experiment_requests: {range: ExperimentRequest, multivalued: true}
       findings: {range: ResearchFinding, multivalued: true}
+
+  SkillSpec:
+    attributes:
+      id: {range: string, required: true}
+      name: {range: string, required: true}
+      kind: {range: SkillKind, required: true}
+      description: {range: string, required: true}
+      execution_mode: {range: SkillExecutionMode, ifabsent: codex_native}
+      capabilities: {range: string, multivalued: true}
+      tools: {range: string, multivalued: true}
+      evidence_inputs: {range: string, multivalued: true}
+      evidence_outputs: {range: string, multivalued: true}
+      framework_mappings: {range: string, multivalued: true}
+      enabled: {range: boolean, ifabsent: true}
+
+  RoleSpec:
+    attributes:
+      id: {range: ResearcherRole, required: true}
+      description: {range: string}
+      skills: {range: string, multivalued: true}
+      default_capabilities: {range: string, multivalued: true}
+      allowed_tools: {range: string, multivalued: true}
 
   InputSpec:
     attributes:
@@ -110,6 +162,7 @@ classes:
       programmatic_tool_calling: {range: boolean, ifabsent: true}
       mcp: {range: McpServerSpec, multivalued: true}
       codex: {range: CodexSpec}
+      orchestration: {range: OrchestrationSpec}
 
   ResearchReference:
     attributes:
@@ -180,6 +233,15 @@ classes:
       statement: {range: string, required: true}
       evidence_ids: {range: string, multivalued: true}
       confidence: {range: string}
+
+  OrchestrationSpec:
+    attributes:
+      executor: {range: string, ifabsent: codex}
+      mode: {range: string, ifabsent: interactive}
+      allow_skill_selection: {range: boolean, ifabsent: true}
+      allow_skill_composition: {range: boolean, ifabsent: true}
+      require_researcher_approval_for_new_skill: {range: boolean, ifabsent: true}
+      require_researcher_approval_for_new_capability: {range: boolean, ifabsent: true}
 
   CodexSpec:
     attributes:
