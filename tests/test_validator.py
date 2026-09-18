@@ -54,3 +54,36 @@ def test_capability_graph_is_normalized():
     assert graph[0]["skill"] == "malware.behavior-analysis"
     assert graph[0]["capabilities"] == ["process.observe", "network.capture"]
 
+
+
+def test_declared_capability_requires_registered_provider(tmp_path):
+    from sec_agent.validator import validate_capability_providers
+    recipe = {"capability_catalog": [{"id": "custom.unavailable"}], "skills": [], "role_definition": {}, "environment": {}}
+    registry = tmp_path / "providers.yaml"
+    registry.write_text("""
+apiVersion: decretum.dev/v1
+kind: CapabilityProviderRegistry
+version: "1.0"
+providers:
+  tcpdump:
+    interface: {type: tool, executable: tcpdump}
+    capabilities: [network.capture]
+""", encoding="utf-8")
+    errors = validate_capability_providers(recipe, registry)
+    assert any("custom.unavailable" in error for error in errors)
+
+
+def test_declared_capability_with_mcp_provider_is_valid(tmp_path):
+    from sec_agent.validator import validate_capability_providers
+    recipe = {"capability_catalog": [{"id": "network.capture"}], "skills": [], "role_definition": {}, "environment": {}}
+    registry = tmp_path / "providers.yaml"
+    registry.write_text("""
+apiVersion: decretum.dev/v1
+kind: CapabilityProviderRegistry
+version: "1.0"
+providers:
+  pcap:
+    interface: {type: mcp, server: pcap}
+    capabilities: [network.capture]
+""", encoding="utf-8")
+    assert validate_capability_providers(recipe, registry) == []
