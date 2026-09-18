@@ -595,6 +595,142 @@ It provides the structure around an interactive security investigation:
 
 The intended result is a **persistent, interactive security-research environment**, not a one-shot experiment runner.
 
+## Local compute and security instrumentation
+
+Decretum treats compute providers and security instrumentation as **capabilities available to the research contract**, not as a hidden runtime dependency.
+
+### Local compute providers
+
+The schema can describe local execution using providers such as:
+
+- Unix/local host
+- Docker
+- Podman
+- Lima
+- Incus
+- LXC
+- KVM
+- Firecracker
+- QEMU
+
+This allows a recipe to express the compute boundary separately from the research logic.
+
+For example:
+
+```yaml
+environment:
+  type: local
+  compute:
+    provider: lima
+    instance: security-research-vm
+    cpu: 4
+    memory_mb: 8192
+    architecture: x86_64
+    ephemeral: true
+  sandbox:
+    backend: lima
+    workspace_directory: /workspace
+```
+
+Decretum describes and validates the provider boundary. It does not silently install or manage a provider. The selected provider must already be available on the researcher's machine or be provisioned through an explicitly approved external workflow.
+
+### Security instrumentation
+
+The schema supports a broad instrumentation vocabulary spanning:
+
+**Kernel / eBPF**
+
+- Sysdig
+- Falco
+- Tracee
+- Tetragon
+- bpftrace
+- BCC
+- libbpf
+- bpftool
+- eBPF exporters
+- opensnoop
+- execsnoop
+- tcpconnect
+- tcplife
+- filetop
+- biolatency
+- runqlat
+- funccount
+
+**System / process**
+
+- strace
+- ltrace
+- perf
+- ftrace
+- auditd
+- Auditbeat
+- osquery
+- procmon
+- psutil
+- lsof
+- nsenter
+- capsh
+- unshare
+
+**Network**
+
+- tcpdump
+- tshark
+- dumpcap
+- Wireshark
+- Zeek
+- Suricata
+- Snort
+- netsniff-ng
+- conntrack
+- nftables
+- iptables
+- ethtool
+- ss
+- ip
+- dig
+- resolvectl
+
+**Binary / malware / memory analysis**
+
+- Volatility
+- Rekall
+- YARA
+- ClamAV
+- Ghidra
+- radare2
+- binwalk
+- strings
+- readelf
+- objdump
+
+The important distinction is that these are **instrumentation capabilities in the ontology**. A particular recipe still determines which ones are actually authorized for a specific investigation.
+
+For example:
+
+```yaml
+instrumentation:
+  tools:
+    - sysdig
+    - falco
+    - tcpdump
+    - zeek
+    - yara
+  events:
+    - process_exec
+    - network_connect
+    - dns_query
+    - file_write
+  probes:
+    - process
+    - network
+    - filesystem
+```
+
+This lets the security-research community extend the instrumentation vocabulary without turning every new tool into a new Decretum runtime component.
+
 ## Local-first security boundary
 
 This branch intentionally excludes hosted/cloud sandbox provisioning.
