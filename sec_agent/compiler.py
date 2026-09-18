@@ -44,8 +44,14 @@ def compile_recipe(recipe: dict[str, Any], artifact_dir: Path) -> ExecutionContr
                      "references": recipe.get("references", [])},
         "inputs": recipe.get("inputs", {}),
         "environment": recipe["environment"],
-        "roles": [{"id": recipe["role"], "skills": [s.get("id") for s in recipe.get("skills", []) or []]}],
-        "skills": recipe.get("skills", []),
+        "roles": [{
+            "id": recipe["role"],
+            "definition": recipe.get("role_definition", {}),
+            "skills": recipe.get("role_definition", {}).get("skills", []) if isinstance(recipe.get("role_definition"), dict) else [s.get("id") for s in recipe.get("skills", []) or []],
+            "default_capabilities": recipe.get("role_definition", {}).get("default_capabilities", []) if isinstance(recipe.get("role_definition"), dict) else [],
+        }],
+        "skills": recipe.get("skills", []) or recipe.get("skill_catalog", []),
+        "skill_catalog": recipe.get("skill_catalog", []),
         "capability_catalog": recipe.get("capability_catalog", []),
         "capability_graph": [
             {
