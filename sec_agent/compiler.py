@@ -32,7 +32,7 @@ def _capabilities(recipe: dict[str, Any]) -> dict[str, list[str]]:
         if any(x in text for x in ("file", "diff", "filesystem")):
             result.add("filesystem.observe")
     return {"required": sorted(result), "optional": [], "denied": [
-        "host.filesystem.write", "host.mount", "privileged.host_access", "unrestricted.network"
+        "host.filesystem.write", "host.mount", "privileged.host_access", "unrestricted.network", "cloud.sandbox"
     ]}
 
 def compile_recipe(recipe: dict[str, Any], artifact_dir: Path) -> ExecutionContract:
