@@ -19,6 +19,29 @@ enums:
       vulnerability_researcher: {}
       security_architect: {}
 
+  CapabilityKind:
+    permissible_values:
+      artifact: {}
+      filesystem: {}
+      process: {}
+      network: {}
+      identity: {}
+      cloud: {}
+      container: {}
+      instrumentation: {}
+      analysis: {}
+      reporting: {}
+
+  CapabilityRisk:
+    permissible_values:
+      read: {}
+      observe: {}
+      collect: {}
+      execute: {}
+      write: {}
+      privileged: {}
+      network_access: {}
+
   SkillKind:
     permissible_values:
       analysis: {}
@@ -109,6 +132,7 @@ classes:
       version: {range: string, required: true}
       role: {range: ResearcherRole, required: true}
       skills: {range: SkillSpec, multivalued: true}
+      capabilities: {range: CapabilitySpec, multivalued: true}
       objective: {range: string, required: true}
       inputs: {range: InputSpec}
       environment: {range: EnvironmentSpec, required: true}
@@ -124,6 +148,17 @@ classes:
       experiment_requests: {range: ExperimentRequest, multivalued: true}
       findings: {range: ResearchFinding, multivalued: true}
 
+  CapabilitySpec:
+    attributes:
+      id: {range: string, required: true}
+      name: {range: string, required: true}
+      kind: {range: CapabilityKind, required: true}
+      risk: {range: CapabilityRisk, required: true}
+      description: {range: string, required: true}
+      requires_approval: {range: boolean, ifabsent: false}
+      tools: {range: string, multivalued: true}
+      evidence_outputs: {range: string, multivalued: true}
+
   SkillSpec:
     attributes:
       id: {range: string, required: true}
@@ -131,7 +166,7 @@ classes:
       kind: {range: SkillKind, required: true}
       description: {range: string, required: true}
       execution_mode: {range: SkillExecutionMode, ifabsent: codex_native}
-      capabilities: {range: string, multivalued: true}
+      capabilities: {range: CapabilitySpec, multivalued: true}
       tools: {range: string, multivalued: true}
       evidence_inputs: {range: string, multivalued: true}
       evidence_outputs: {range: string, multivalued: true}
