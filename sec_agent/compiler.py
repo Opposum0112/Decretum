@@ -1,85 +1,60 @@
-"""Compile recipes into immutable execution contracts and dispatch harnesses."""
+"""Compile a validated Decretum recipe into an agent-executable research contract."""
 from __future__ import annotations
-
-import hashlib
-import json
-import subprocess
+import hashlib, json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-
 @dataclass(frozen=True, slots=True)
 class ExecutionContract:
     contract_id: str
-    recipe: dict[str, Any]
+    contract: dict[str, Any]
     artifact_dir: Path
-    mcp_config: dict[str, Any]
 
+def _capabilities(recipe: dict[str, Any]) -> dict[str, list[str]]:
+    result: set[str] = {"artifact.read", "artifact.collect"}
+    evidence = recipe.get("evidence", {})
+    workload = recipe.get("workload", {})
+    instrumentation = recipe.get("instrumentation", {})
+    if workload.get("command"):
+        result.add("process.execute")
+    for tool in instrumentation.get("tools", []) or []:
+        if tool in {"strace", "tetragon", "bpftrace"}:
+            result.add("process.observe")
+        if tool in {"tcpdump", "tshark"}:
+            result.update({"network.observe", "network.capture"})
+    for artifact in evidence.get("required", []) or []:
+        text = str(artifact).lower()
+        if any(x in text for x in ("pcap", "network", "dns")):
+            result.add("network.observe")
+        if any(x in text for x in ("proc", "process", "syscall")):
+            result.add("process.observe")
+        if any(x in text for x in ("file", "diff", "filesystem")):
+            result.add("filesystem.observe")
+    return {"required": sorted(result), "optional": [], "denied": [
+        "host.filesystem.write", "host.mount", "privileged.host_access", "unrestricted.network"
+    ]}
 
 def compile_recipe(recipe: dict[str, Any], artifact_dir: Path) -> ExecutionContract:
-    """Create a deterministic, immutable execution contract from a validated recipe."""
-    canonical = json.dumps(recipe, sort_keys=True, separators=(",", ":")).encode()
-    contract_id = hashlib.sha256(canonical).hexdigest()[:16]
-    provider = recipe["compute"]["provider"]
-    mcp_config = {
-        "mcpServers": {
-            "compute": {
-                "command": "python",
-                "args": ["-m", f"sec_agent.mcp.{provider}_provider"],
-            },
-            "artifact-inspector": {
-                "command": "python",
-                "args": ["-m", "sec_agent.mcp.artifact_inspector"],
-            },
-        }
+    capabilities = _capabilities(recipe)
+    body = {
+        "apiVersion": "decretum.dev/v1", "kind": "ResearchContract",
+        "research": {"id": recipe["id"], "name": recipe["name"], "version": recipe["version"],
+                     "role": recipe["role"], "objective": recipe["objective"],
+                     "references": recipe.get("references", [])},
+        "inputs": recipe.get("inputs", {}),
+        "environment": recipe["environment"],
+        "capabilities": capabilities,
+        "policy": recipe["policy"], "evidence": recipe["evidence"],
+        "completion": recipe["completion"], "workload": recipe.get("workload", {}),
+        "reports": recipe.get("reports", [])
     }
-    return ExecutionContract(
-        contract_id,
-        json.loads(json.dumps(recipe)),
-        artifact_dir,
-        mcp_config,
-    )
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+    contract_id = hashlib.sha256(canonical).hexdigest()[:16]
+    return ExecutionContract(contract_id, {**body, "contract_id": contract_id}, artifact_dir)
 
-
-def dispatch(contract: ExecutionContract, *, dry_run: bool = True) -> int:
-    """Dispatch a recipe without ever running its workload directly on the host.
-
-    The compute provider owns sandbox provisioning and workload execution. Harnesses
-    may orchestrate the run, but the final command must execute inside that sandbox.
-    """
-    recipe = contract.recipe
-    provider = recipe["compute"]["provider"]
-    command = recipe["workload"]["command"]
-    timeout = recipe["workload"].get("timeout_seconds", 300)
-
-    if dry_run:
-        return 0
-
-    # Keep this path provider-neutral. A provider module exposes the same MCP tool
-    # contract; direct host subprocess execution is deliberately not supported.
-    module = f"sec_agent.mcp.{provider}_provider"
-    provision = [
-        "python",
-        "-m",
-        module,
-        "--provision",
-        recipe["compute"]["base_image"],
-        "--cpus",
-        str(recipe["compute"]["cpus"]),
-        "--memory",
-        recipe["compute"]["memory"],
-    ]
-    execute = ["python", "-m", module, "--execute", command]
-    destroy = ["python", "-m", module, "--destroy"]
-
-    # Provider CLIs are intentionally invoked as separate lifecycle operations so
-    # cleanup remains possible even when the workload exits non-zero or times out.
-    try:
-        subprocess.run(provision, check=True, timeout=120)
-        result = subprocess.run(execute, check=False, timeout=timeout)
-        return result.returncode
-    except subprocess.TimeoutExpired:
-        return 124
-    finally:
-        subprocess.run(destroy, check=False, timeout=60)
+def write_contract(contract: ExecutionContract) -> Path:
+    contract.artifact_dir.mkdir(parents=True, exist_ok=True)
+    path = contract.artifact_dir / "research-contract.json"
+    path.write_text(json.dumps(contract.contract, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
