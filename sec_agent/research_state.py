@@ -27,8 +27,8 @@ def record_hypothesis(root: Path, hypothesis_id: str, statement: str, status: st
     append_event(root, "hypothesis_recorded", item)
     return item
 
-def record_finding(root: Path, finding_id: str, statement: str, evidence_ids: list[str] | None = None, confidence: str | None = None) -> dict[str, Any]:
-    item = {"id": finding_id, "statement": statement, "evidence_ids": evidence_ids or [], "confidence": confidence}
+def record_finding(root: Path, finding_id: str, statement: str, evidence_ids: list[str] | None = None, confidence: str | None = None, semantic_tags: list[str] | None = None, techniques: list[str] | None = None, tactics: list[str] | None = None, controls: list[str] | None = None, references: list[str] | None = None, status: str = "observed") -> dict[str, Any]:
+    item = {"id": finding_id, "statement": statement, "evidence_ids": evidence_ids or [], "confidence": confidence, "semantic_tags": semantic_tags or [], "techniques": techniques or [], "tactics": tactics or [], "controls": controls or [], "references": references or [], "status": status, "created_at": _now()}
     append_event(root, "finding_recorded", item)
     return item
 
@@ -46,3 +46,4 @@ def read_events(root: Path) -> list[dict[str, Any]]:
 def evidence_context(root: Path, limit: int = 60) -> str:
     events = read_events(root)
     return json.dumps(events[-limit:], indent=2, sort_keys=True) if events else "No structured research state has been recorded yet."
+\n\ndef record_reference(root: Path, reference: dict[str, Any]) -> dict[str, Any]:\n    """Persist a security-framework, threat-intelligence, or research reference."""\n    append_event(root, "research_reference_recorded", reference)\n    return reference\n
