@@ -41,7 +41,7 @@ classes:
       version: {range: string, required: true}
       role: {range: ResearcherRole, required: true}
       objective: {range: string, required: true}
-      inputs: {range: string}
+      inputs: {range: InputSpec}
       environment: {range: EnvironmentSpec, required: true}
       policy: {range: PolicySpec, required: true}
       instrumentation: {range: InstrumentationSpec}
@@ -51,16 +51,32 @@ classes:
       workload: {range: WorkloadSpec}
       reports: {range: ReportSpec, multivalued: true}
 
+  InputSpec:
+    attributes:
+      sample: {range: string}
+      workload: {range: string}
+      artifact: {range: string}
+      artifacts: {range: string, multivalued: true}
+
   EnvironmentSpec:
     attributes:
       type: {range: EnvironmentType, ifabsent: openai_hosted}
-      network: {range: string}
+      network: {range: NetworkSpec}
       privileged: {range: boolean, ifabsent: false}
       host_mounts: {range: boolean, ifabsent: false}
       workspace_directory: {range: string}
       web_search: {range: boolean, ifabsent: false}
       programmatic_tool_calling: {range: boolean, ifabsent: true}
-      mcp: {range: string, multivalued: true}
+      mcp: {range: McpServerSpec, multivalued: true}
+
+  NetworkSpec:
+    attributes:
+      mode: {range: string, ifabsent: none}
+
+  McpServerSpec:
+    attributes:
+      label: {range: string, required: true}
+      transport: {range: string, required: true}
 
   PolicySpec:
     attributes:
