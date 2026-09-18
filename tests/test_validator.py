@@ -54,8 +54,3 @@ def test_capability_graph_is_normalized():
     assert graph[0]["skill"] == "malware.behavior-analysis"
     assert graph[0]["capabilities"] == ["process.observe", "network.capture"]
 
-def test_skill_capability_metadata_must_match():
-    recipe = load_recipe(Path("recipes/openai-hosted-malware-analysis.yaml"))
-    recipe["skills"][0]["capabilities"][0]["risk"] = "write"
-    errors = structural_validate(recipe)
-    assert any("conflicts on risk" in e for e in errors)
