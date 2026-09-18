@@ -53,7 +53,33 @@ Validation checks the recipe without executing the workload.
 decretum validate recipes/openai-hosted-malware-analysis.yaml
 ```
 
-### 3. Compile the contract
+### 3. Resolve capability readiness
+
+Before execution, inspect which registered providers, integrations, harnesses, and models can satisfy the recipe:
+
+```bash
+decretum resolve recipes/openai-hosted-malware-analysis.yaml
+```
+
+The resolver does **not** execute the research. It answers:
+
+```text
+Capability
+   ↓
+Provider candidates (MCP / API / tool)
+   ↓
+Integration / transport
+   ↓
+Harness
+   ↓
+LLM reasoning
+   ↓
+Prerequisite readiness
+```
+
+For tool providers, Decretum checks whether the required executable is discoverable on the local host. API/MCP entries are reported as registered endpoints; connection/credential checks remain an execution-time concern.
+
+### 4. Compile the contract
 
 ```bash
 decretum compile recipes/openai-hosted-malware-analysis.yaml
@@ -61,7 +87,7 @@ decretum compile recipes/openai-hosted-malware-analysis.yaml
 
 The compiler produces a machine-readable `research-contract.json` for the research session.
 
-### 4. Run the research
+### 5. Run the research
 
 ```bash
 decretum run recipes/openai-hosted-malware-analysis.yaml --dry-run=false
@@ -69,14 +95,14 @@ decretum run recipes/openai-hosted-malware-analysis.yaml --dry-run=false
 
 Codex investigates interactively within the compiled contract. It can inspect evidence, select and compose declared skills, use permitted instrumentation, form hypotheses, request experiments, and iterate with the researcher.
 
-### 5. Continue the same research session
+### 6. Continue the same research session
 
 ```bash
 decretum analyze <research-id> "What evidence is still missing?"
 decretum analyze <research-id> "Compare the observed process and network activity."
 ```
 
-### 6. Inspect persisted state
+### 7. Inspect persisted state
 
 ```bash
 decretum inspect <research-id>
@@ -114,7 +140,7 @@ Capability
    +-- Tool / CLI provider
 ```
 
-The validator checks the declared capability catalog, skill and role capability references, and compute requirements against `schema/provider_registry.yaml`. A missing provider is a **compile-time error**, not a runtime warning.
+The validator checks the declared capability catalog, skill and role capability references, and compute requirements against `schema/provider_registry.yaml`. A missing provider is a **compile-time error**, not a runtime warning. The registry also records available **integrations**, **agent harnesses**, and **LLM model families**. The resolver then reports candidate execution paths and local readiness without choosing an implementation permanently.
 
 This keeps the boundaries explicit:
 
@@ -127,10 +153,12 @@ Adding a new capability therefore follows:
 
 ```text
 1. Add capability to the LinkML model
-2. Add one or more MCP/API/tool providers
-3. Validate the provider registry
-4. Compile the research recipe
-5. Only then hand the contract to the autonomous agent
+2. Register one or more MCP/API/tool providers
+3. Register integrations that expose those providers when needed
+4. Register compatible autonomous harnesses and model families
+5. Validate and resolve readiness
+6. Compile the research recipe
+7. Hand the frozen contract to the autonomous agent
 ```
 
 ## Capability model
@@ -163,6 +191,12 @@ Examples:
 Supported local compute vocabulary includes:
 
 `Unix` · `Docker` · `Podman` · `Lima` · `Incus` · `LXC` · `KVM` · `Firecracker` · `QEMU`
+
+## Autonomous research and learning
+
+Decretum is the contract and capability boundary; the autonomous agent/harness is the researcher. A researcher can compose validated capabilities into comprehensive recipes and iterate through hypotheses, experiments, evidence, analysis, and findings. Required reports are preserved with the research state.
+
+The capability catalog is intentionally extensible: new tools, APIs, MCP servers, integrations, harnesses, and model families can be registered without changing the meaning of an existing capability. This allows an implementation to evolve while recipes remain reusable.
 
 ## Persistent research state
 
