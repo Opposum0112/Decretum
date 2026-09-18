@@ -53,6 +53,9 @@ classes:
       references: {range: string, multivalued: true}
       workload: {range: WorkloadSpec}
       reports: {range: ReportSpec, multivalued: true}
+      hypotheses: {range: Hypothesis, multivalued: true}
+      experiment_requests: {range: ExperimentRequest, multivalued: true}
+      findings: {range: ResearchFinding, multivalued: true}
 
   InputSpec:
     attributes:
@@ -70,6 +73,48 @@ classes:
       programmatic_tool_calling: {range: boolean, ifabsent: true}
       mcp: {range: McpServerSpec, multivalued: true}
       codex: {range: CodexSpec}
+
+  EvidenceRecord:
+    attributes:
+      id: {range: string, required: true}
+      experiment_id: {range: string}
+      kind: {range: string, required: true}
+      path: {range: string}
+      sha256: {range: string}
+      description: {range: string}
+      collected_at: {range: string}
+
+  Hypothesis:
+    attributes:
+      id: {range: string, required: true}
+      statement: {range: string, required: true}
+      status: {range: string, required: true}
+      based_on: {range: string, multivalued: true}
+
+  ExperimentRequest:
+    attributes:
+      id: {range: string, required: true}
+      hypothesis_id: {range: string}
+      objective: {range: string, required: true}
+      requested_capabilities: {range: string, multivalued: true}
+      evidence_required: {range: string, multivalued: true}
+      approval_required: {range: boolean, ifabsent: true}
+      status: {range: string, ifabsent: proposed}
+
+  ExperimentResult:
+    attributes:
+      id: {range: string, required: true}
+      request_id: {range: string, required: true}
+      status: {range: string, required: true}
+      evidence_ids: {range: string, multivalued: true}
+      conclusion: {range: string}
+
+  ResearchFinding:
+    attributes:
+      id: {range: string, required: true}
+      statement: {range: string, required: true}
+      evidence_ids: {range: string, multivalued: true}
+      confidence: {range: string}
 
   CodexSpec:
     attributes:
