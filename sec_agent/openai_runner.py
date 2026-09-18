@@ -16,7 +16,7 @@ SANDBOX_MODES = {"read-only", "workspace-write", "danger-full-access"}
 APPROVAL_POLICIES = {"untrusted", "on-request", "never"}
 
 
-def _instructions(contract: dict[str, Any]) -> str:
+def _instructions(contract: dict[str, Any], evidence_context: str = "") -> str:
     return f"""You are the Codex execution agent for a Decretum security research project.
 
 The Decretum ResearchContract below is authoritative. Follow its objective,
@@ -71,7 +71,7 @@ def _codex_options(contract: dict[str, Any], workspace: Path) -> tuple[str, dict
     return sandbox_mode, thread_options, turn_options
 
 
-async def _run(contract: dict[str, Any], workspace: Path, prompt: str, session_db: Path) -> Any:
+async def _run(contract: dict[str, Any], workspace: Path, prompt: str, session_db: Path, ledger_context: str) -> Any:
     from agents import Agent, Runner, SQLiteSession
     from agents.extensions.experimental.codex import ThreadOptions, TurnOptions, codex_tool
 
@@ -91,7 +91,7 @@ async def _run(contract: dict[str, Any], workspace: Path, prompt: str, session_d
 
     agent = Agent(
         name="Decretum Codex Researcher",
-        instructions=_instructions(contract),
+        instructions=_instructions(contract, ledger_context),
         tools=[tool],
     )
 
@@ -101,7 +101,7 @@ async def _run(contract: dict[str, Any], workspace: Path, prompt: str, session_d
         "experiments. Keep conclusions tied to observed evidence and do not "
         "execute through a hosted sandbox."
     )
-    session = SQLiteSession(contract["research"]["id"], str(session_db))
+    session = SQLiteSession(contract["research"]["id"], str(session_db, ledger_context))
     return await Runner.run(agent, prompt, session=session)
 
 
