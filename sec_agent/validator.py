@@ -77,19 +77,11 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
         if not skill.get("name") or not skill.get("kind") or not skill.get("description"):
             errors.append(f"skill {sid!r} requires name, kind, and description")
         for cap in skill.get("capabilities", []) or []:
-            if not isinstance(cap, dict):
-                errors.append(f"skill {sid!r} contains a non-mapping capability")
+            if not isinstance(cap, str):
+                errors.append(f"skill {sid!r} capability references must be capability IDs")
                 continue
-            cid = cap.get("id")
-            if not cid:
-                errors.append(f"skill {sid!r} capability.id is required")
-            elif cid not in cap_by_id:
-                errors.append(f"skill {sid!r} references undeclared capability {cid!r}")
-            else:
-                declared = cap_by_id[cid]
-                for field in ("kind", "risk"):
-                    if cap.get(field) and cap.get(field) != declared.get(field):
-                        errors.append(f"skill {sid!r} capability {cid!r} conflicts on {field}")
+            if cap not in cap_by_id:
+                errors.append(f"skill {sid!r} references undeclared capability {cap!r}")
         for tool in skill.get("tools", []) or []:
             if tool not in TOOLS:
                 errors.append(f"unsupported skill tool {tool!r} in {sid!r}")
