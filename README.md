@@ -568,3 +568,62 @@ This branch implements the local Codex-oriented architecture with:
 - evidence-oriented investigation flow
 
 The remaining evolution is to make experiment lifecycle, evidence ingestion, semantic retrieval, researcher approvals, and report generation fully structured end-to-end rather than relying on free-form Codex output.
+
+
+## Declaring capabilities
+
+You can declare capabilities directly in a recipe or attach them to skills. For example:
+
+```yaml
+capabilities:
+  - id: process.observe
+    name: Observe processes
+    kind: process
+    risk: observe
+    description: Inspect process execution and metadata
+    requires_approval: false
+    tools: [strace, tetragon]
+    evidence_outputs: [process_events]
+
+skills:
+  - id: malware.behavior
+    name: Malware behavior analysis
+    kind: malware_analysis
+    description: Analyze process, filesystem, and network behavior
+    capabilities:
+      - id: process.observe
+        name: Observe processes
+        kind: process
+        risk: observe
+        description: Inspect process execution and metadata
+```
+
+This makes the security boundary understandable to both humans and automation: **what the researcher wants, what the agent may do, which instruments may be used, and what evidence must come back**.
+
+## Security framework and threat-intelligence references
+
+Recipes can attach structured references to the investigation, including security frameworks, threat-intelligence reports and feeds, vendor advisories, vulnerability databases, research papers, incident reports, malware reports, detection content, and standards.
+
+Use the reference fields to preserve the source identity, authority, title, URI/citation, version, access time, and notes. Findings can then retain links to the evidence and references that support them.
+
+## What Codex does
+
+Codex is the interactive research executor. It can:
+
+1. Read the compiled contract and current research state.
+2. Select or compose declared skills.
+3. Inspect existing evidence.
+4. Form or update hypotheses.
+5. Propose and execute bounded experiments when permitted.
+6. Collect and hash evidence.
+7. Re-analyze accumulated evidence when the researcher asks a follow-up question.
+8. Record findings and their evidence/reference relationships.
+9. Continue the research loop until the declared completion criteria are satisfied.
+
+Codex does **not** expand the contract silently. New privileges, capabilities, tools, or network access require the policy/approval path defined by the recipe.
+
+## Local execution boundary
+
+Decretum is intentionally local-first. The current execution boundary is Unix or Docker on the researcher's machine. It does not provision a hosted/cloud sandbox.
+
+This is especially important for security research: the recipe describes the permitted boundary, the validator checks it, the compiler freezes it into a contract, and Codex operates inside that contract.
