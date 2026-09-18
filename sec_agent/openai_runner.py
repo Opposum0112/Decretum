@@ -48,7 +48,7 @@ ResearchContract:
 """
 
 
-def _codex_options(contract: dict[str, Any], workspace: Path, thread_id: str | None = None) -> tuple[str, dict[str, Any], dict[str, Any]]:
+def _codex_options(contract: dict[str, Any], workspace: Path) -> tuple[str, dict[str, Any], dict[str, Any]]:
     environment = contract["environment"]
     codex = environment.get("codex", {})
     sandbox_mode = codex.get("sandbox_mode", "workspace-write")
@@ -64,7 +64,6 @@ def _codex_options(contract: dict[str, Any], workspace: Path, thread_id: str | N
         "network_access_enabled": bool(codex.get("network_access_enabled", False)),
         "web_search_mode": codex.get("web_search_mode", "disabled"),
         "approval_policy": approval_policy,
-        **({"thread_id": thread_id} if thread_id else {}),
     }
     turn_options = {
         "idle_timeout_seconds": int(codex.get("idle_timeout_seconds", 120)),
@@ -72,11 +71,11 @@ def _codex_options(contract: dict[str, Any], workspace: Path, thread_id: str | N
     return sandbox_mode, thread_options, turn_options
 
 
-async def _run(contract: dict[str, Any], workspace: Path, prompt: str, thread_id: str | None = None) -> Any:
-    from agents import Agent, Runner
+async def _run(contract: dict[str, Any], workspace: Path, prompt: str, session_db: Path) -> Any:
+    from agents import Agent, Runner, SQLiteSession
     from agents.extensions.experimental.codex import ThreadOptions, TurnOptions, codex_tool
 
-    sandbox_mode, thread_options, turn_options = _codex_options(contract, workspace, thread_id)
+    sandbox_mode, thread_options, turn_options = _codex_options(contract, workspace)
     environment = contract["environment"]
     codex = environment.get("codex", {})
 
@@ -102,7 +101,8 @@ async def _run(contract: dict[str, Any], workspace: Path, prompt: str, thread_id
         "experiments. Keep conclusions tied to observed evidence and do not "
         "execute through a hosted sandbox."
     )
-    return await Runner.run(agent, prompt)
+    session = SQLiteSession(contract["research"]["id"], str(session_db))
+    return await Runner.run(agent, prompt, session=session)
 
 
 def create_session(
@@ -110,6 +110,8 @@ def create_session(
     *,
     workspace: Path,
     model: str | None = None,
+    prompt: str | None = None,
+    session_db: Path | None = None,
 ) -> Any:
     """Run a complete local Codex research session."""
     if model:
@@ -120,7 +122,9 @@ def create_session(
     workspace = workspace.resolve()
     if not workspace.exists():
         raise FileNotFoundError(f"Codex workspace does not exist: {workspace}")
-    return asyncio.run(_run(contract, workspace, prompt or "Begin the research and work until the current evidence is sufficient for the requested stage.", thread_id))
+    db = (session_db or (workspace / ".decretum" / "research-session.sqlite3")).resolve()
+    db.parent.mkdir(parents=True, exist_ok=True)
+    return asyncio.run(_run(contract, workspace, prompt or "Begin the research and work until the current evidence is sufficient for the requested stage.", db))
 
 
 def save_session(result: Any, artifact_dir: Path) -> Path:
