@@ -132,7 +132,7 @@ classes:
       version: {range: string, required: true}
       role: {range: ResearcherRole, required: true}
       skills: {range: SkillSpec, multivalued: true}
-      capabilities: {range: CapabilitySpec, multivalued: true}
+      capability_catalog: {range: CapabilitySpec, multivalued: true}
       objective: {range: string, required: true}
       inputs: {range: InputSpec}
       environment: {range: EnvironmentSpec, required: true}
@@ -166,7 +166,7 @@ classes:
       kind: {range: SkillKind, required: true}
       description: {range: string, required: true}
       execution_mode: {range: SkillExecutionMode, ifabsent: codex_native}
-      capabilities: {range: CapabilitySpec, multivalued: true}
+      capabilities: {range: string, multivalued: true}
       tools: {range: string, multivalued: true}
       evidence_inputs: {range: string, multivalued: true}
       evidence_outputs: {range: string, multivalued: true}
