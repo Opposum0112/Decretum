@@ -102,6 +102,37 @@ flowchart TD
 
 Decretum constrains the research space; **Codex explores that space**. If a capability is outside the contract, it must follow the configured approval or contract-amendment path rather than silently expanding access.
 
+## Capability-provider validation
+
+Every capability is required to have at least one registered implementation before a recipe can compile. The provider registry is transport-neutral and supports three provider interfaces:
+
+```text
+Capability
+   |
+   +-- MCP provider
+   +-- API provider
+   +-- Tool / CLI provider
+```
+
+The validator checks the declared capability catalog, skill and role capability references, and compute requirements against `schema/provider_registry.yaml`. A missing provider is a **compile-time error**, not a runtime warning.
+
+This keeps the boundaries explicit:
+
+- **Schema** = capability boundary.
+- **Recipe** = execution boundary.
+- **Provider** = implementation mechanism.
+- **Compiled contract** = frozen machine-readable research boundary.
+
+Adding a new capability therefore follows:
+
+```text
+1. Add capability to the LinkML model
+2. Add one or more MCP/API/tool providers
+3. Validate the provider registry
+4. Compile the research recipe
+5. Only then hand the contract to the autonomous agent
+```
+
 ## Capability model
 
 Capabilities are tool-independent. A recipe declares capabilities; concrete tools implement them.
