@@ -1,126 +1,125 @@
 apiVersion: decretum.dev/v1
 kind: CapabilityProviderRegistry
-version: "1.0"
+version: "1.1"
 
-# A provider is an implementation endpoint for a Decretum capability.
-# interface.type is intentionally transport-neutral: mcp, api, or tool.
+# Capability is the stable semantic contract.
+# Providers are concrete implementations. Harnesses orchestrate them.
+# Integrations expose providers through MCP/API/tool transports.
 providers:
   tcpdump:
-    interface:
-      type: tool
-      executable: tcpdump
+    interface: {type: tool, executable: tcpdump}
     capabilities: [network.capture, network.observe]
-
   tshark:
-    interface:
-      type: tool
-      executable: tshark
+    interface: {type: tool, executable: tshark}
     capabilities: [network.capture, network.observe, protocol.analyze]
-
   strace:
-    interface:
-      type: tool
-      executable: strace
+    interface: {type: tool, executable: strace}
     capabilities: [process.observe, syscall.observe]
-
   tetragon:
-    interface:
-      type: api
-      endpoint: local:tetragon
+    interface: {type: api, endpoint: local:tetragon}
     capabilities: [process.observe, network.observe, filesystem.observe, syscall.observe, container.observe, kernel.trace]
-
   sysdig:
-    interface:
-      type: tool
-      executable: sysdig
+    interface: {type: tool, executable: sysdig}
     capabilities: [process.observe, filesystem.observe, network.observe, syscall.observe, container.observe]
-
   falco:
-    interface:
-      type: api
-      endpoint: local:falco
+    interface: {type: api, endpoint: local:falco}
     capabilities: [process.observe, filesystem.observe, network.observe, syscall.observe, container.observe, detection.observe]
-
   pcap-mcp:
-    interface:
-      type: mcp
-      server: pcap
+    interface: {type: mcp, server: pcap}
     capabilities: [network.capture, network.observe]
-
   artifact-filesystem:
-    interface:
-      type: tool
-      executable: filesystem
+    interface: {type: tool, executable: filesystem}
     capabilities: [artifact.read, artifact.collect, filesystem.observe]
-
   local-process:
-    interface:
-      type: tool
-      executable: shell
+    interface: {type: tool, executable: shell}
     capabilities: [process.execute, process.observe]
-
   lima:
-    interface:
-      type: api
-      endpoint: local:lima
+    interface: {type: api, endpoint: local:lima}
     capabilities: [compute.vm, compute.snapshot, workspace.execute]
-
   docker:
-    interface:
-      type: api
-      endpoint: local:docker
+    interface: {type: api, endpoint: local:docker}
     capabilities: [compute.container, compute.snapshot, workspace.execute]
-
   podman:
-    interface:
-      type: api
-      endpoint: local:podman
+    interface: {type: api, endpoint: local:podman}
     capabilities: [compute.container, compute.snapshot, workspace.execute]
-
   incus:
-    interface:
-      type: api
-      endpoint: local:incus
+    interface: {type: api, endpoint: local:incus}
     capabilities: [compute.container, compute.vm, compute.snapshot, workspace.execute]
-
   qemu:
-    interface:
-      type: tool
-      executable: qemu-system
+    interface: {type: tool, executable: qemu-system}
     capabilities: [compute.vm, compute.snapshot]
-
   kvm:
-    interface:
-      type: tool
-      executable: qemu-system
+    interface: {type: tool, executable: qemu-system}
     capabilities: [compute.vm, compute.snapshot]
-
+  firecracker:
+    interface: {type: tool, executable: firecracker}
+    capabilities: [compute.microvm, compute.snapshot]
   volatility:
-    interface:
-      type: tool
-      executable: volatility
+    interface: {type: tool, executable: volatility}
     capabilities: [memory.acquire, memory.analyze]
-
   yara:
-    interface:
-      type: tool
-      executable: yara
+    interface: {type: tool, executable: yara}
     capabilities: [artifact.scan, malware.analyze]
-
   ghidra:
-    interface:
-      type: tool
-      executable: ghidra
+    interface: {type: tool, executable: ghidra}
     capabilities: [binary.analyze, reverse_engineer]
-
   zeek:
-    interface:
-      type: tool
-      executable: zeek
+    interface: {type: tool, executable: zeek}
     capabilities: [network.capture, network.observe, protocol.analyze, network.metadata]
-
   suricata:
-    interface:
-      type: tool
-      executable: suricata
+    interface: {type: tool, executable: suricata}
     capabilities: [network.capture, network.observe, network.detection]
+
+# Integrations are discovery/transport surfaces. They may expose one or more providers.
+integrations:
+  pcap-mcp:
+    type: mcp
+    provider: pcap-mcp
+  local-tools:
+    type: tool
+    provider: local-process
+  docker-api:
+    type: api
+    provider: docker
+  podman-api:
+    type: api
+    provider: podman
+  lima-api:
+    type: api
+    provider: lima
+  incus-api:
+    type: api
+    provider: incus
+
+# Harnesses are execution/orchestration adapters, not capability implementations.
+harnesses:
+  codex:
+    kind: agent
+    supported_interfaces: [mcp, api, tool]
+  goose:
+    kind: agent
+    supported_interfaces: [mcp, api, tool]
+  open_code:
+    kind: agent
+    supported_interfaces: [mcp, api, tool]
+  google_adk:
+    kind: agent
+    supported_interfaces: [mcp, api, tool]
+  vercel_ai:
+    kind: agent
+    supported_interfaces: [mcp, api, tool]
+
+# Models provide reasoning; they do not replace capability providers.
+models:
+  openai:
+    kind: llm
+    env: OPENAI_API_KEY
+  anthropic:
+    kind: llm
+    env: ANTHROPIC_API_KEY
+  google:
+    kind: llm
+    env: GOOGLE_API_KEY
+  xai:
+    kind: llm
+    env: XAI_API_KEY
