@@ -4,6 +4,7 @@ title: Decretum Security Research Metamodel
 license: MIT
 definition_uri_prefixes:
   sec: https://decretum.dev/schema/
+
 enums:
   ResearcherRole:
     permissible_values:
@@ -11,14 +12,10 @@ enums:
       supply_chain_auditor: {}
       detection_engineer: {}
       vulnerability_exploit_researcher: {}
-  ComputeProvider:
+  EnvironmentType:
     permissible_values:
-      lima: {}
-      podman: {}
-      docker: {}
-  HashAlgorithm:
-    permissible_values:
-      sha256: {}
+      openai_hosted: {}
+      self_hosted: {}
   InstrumentationTool:
     permissible_values:
       tetragon: {}
@@ -26,29 +23,6 @@ enums:
       strace: {}
       tcpdump: {}
       tshark: {}
-  Harness:
-    permissible_values:
-      goose: {}
-      pi: {}
-      headless: {}
-  Framework:
-    permissible_values:
-      mitre_attack: {}
-      d3fend: {}
-      capec: {}
-      cve: {}
-      cti_advisory: {}
-  ArtifactKind:
-    permissible_values:
-      package_audit_log: {}
-      file_diff: {}
-      dns_lookup: {}
-      pcap: {}
-      process_memory_dump: {}
-      syscall_log: {}
-      asan_crash_log: {}
-      core_dump: {}
-      gdb_backtrace: {}
   ReportFormat:
     permissible_values:
       markdown: {}
@@ -62,100 +36,60 @@ classes:
   ResearchRecipe:
     tree_root: true
     attributes:
-      id:
-        range: string
-        required: true
-      name:
-        range: string
-        required: true
-      version:
-        range: string
-        required: true
-      role:
-        range: ResearcherRole
-        required: true
-      objective:
-        range: string
-        required: true
-      harness:
-        range: Harness
-        required: true
-      compute:
-        range: ComputeSpec
-        required: true
-      instrumentation:
-        range: InstrumentationSpec
-      evidence:
-        range: EvidenceSpec
-        required: true
-      references:
-        range: string
-        multivalued: true
-      workload:
-        range: WorkloadSpec
-        required: true
-      reports:
-        range: ReportSpec
-        multivalued: true
+      id: {range: string, required: true}
+      name: {range: string, required: true}
+      version: {range: string, required: true}
+      role: {range: ResearcherRole, required: true}
+      objective: {range: string, required: true}
+      inputs: {range: string}
+      environment: {range: EnvironmentSpec, required: true}
+      policy: {range: PolicySpec, required: true}
+      instrumentation: {range: InstrumentationSpec}
+      evidence: {range: EvidenceSpec, required: true}
+      completion: {range: CompletionSpec, required: true}
+      references: {range: string, multivalued: true}
+      workload: {range: WorkloadSpec}
+      reports: {range: ReportSpec, multivalued: true}
 
-  ComputeSpec:
+  EnvironmentSpec:
     attributes:
-      provider:
-        range: ComputeProvider
-        required: true
-      base_image:
-        range: string
-        required: true
-      cpus:
-        range: integer
-        minimum_value: 1
-        required: true
-      memory:
-        range: string
-        required: true
-      network:
-        range: string
-      allow_host_mounts:
-        range: boolean
-        ifabsent: false
+      type: {range: EnvironmentType, ifabsent: openai_hosted}
+      network: {range: string}
+      privileged: {range: boolean, ifabsent: false}
+      host_mounts: {range: boolean, ifabsent: false}
+      workspace_directory: {range: string}
+      web_search: {range: boolean, ifabsent: false}
+      programmatic_tool_calling: {range: boolean, ifabsent: true}
+      mcp: {range: string, multivalued: true}
+
+  PolicySpec:
+    attributes:
+      allow: {range: string, multivalued: true}
+      deny: {range: string, multivalued: true}
+      approval_required: {range: string, multivalued: true}
 
   InstrumentationSpec:
     attributes:
-      tools:
-        range: InstrumentationTool
-        multivalued: true
-      trace_flags:
-        range: string
-        multivalued: true
+      tools: {range: InstrumentationTool, multivalued: true}
+      trace_flags: {range: string, multivalued: true}
 
   EvidenceSpec:
     attributes:
-      artifact_paths:
-        range: string
-        multivalued: true
-        required: true
-      hash_algorithm:
-        range: HashAlgorithm
-        ifabsent: sha256
-      manifest:
-        range: boolean
-        ifabsent: true
+      required: {range: string, multivalued: true, required: true}
+      hash_algorithm: {range: string, ifabsent: sha256}
+      manifest: {range: boolean, ifabsent: true}
+
+  CompletionSpec:
+    attributes:
+      report_required: {range: boolean, ifabsent: true}
+      conclusion_required: {range: boolean, ifabsent: true}
 
   WorkloadSpec:
     attributes:
-      command:
-        range: string
-        required: true
-      timeout_seconds:
-        range: integer
-        minimum_value: 1
-        ifabsent: 300
+      command: {range: string}
+      timeout_seconds: {range: integer, minimum_value: 1, ifabsent: 300}
 
   ReportSpec:
     attributes:
-      kind:
-        range: ReportFormat
-        required: true
-      template:
-        range: string
-        required: true
+      kind: {range: ReportFormat, required: true}
+      template: {range: string, required: true}
