@@ -26,6 +26,42 @@ enums:
       strace: {}
       tcpdump: {}
       tshark: {}
+  ReferenceType:
+    permissible_values:
+      security_framework: {}
+      threat_intelligence_report: {}
+      threat_intelligence_feed: {}
+      vendor_advisory: {}
+      vulnerability_database: {}
+      research_paper: {}
+      incident_report: {}
+      malware_report: {}
+      detection_content: {}
+      standards_document: {}
+
+  ReferenceAuthority:
+    permissible_values:
+      mitre: {}
+      nist: {}
+      cisa: {}
+      microsoft: {}
+      google: {}
+      aws: {}
+      palo_alto_networks: {}
+      crowdstrike: {}
+      mandiant: {}
+      vendor: {}
+      community: {}
+      researcher: {}
+
+  FindingStatus:
+    permissible_values:
+      observed: {}
+      supported: {}
+      refuted: {}
+      inconclusive: {}
+      superseded: {}
+
   ReportFormat:
     permissible_values:
       markdown: {}
@@ -50,7 +86,8 @@ classes:
       instrumentation: {range: InstrumentationSpec}
       evidence: {range: EvidenceSpec, required: true}
       completion: {range: CompletionSpec, required: true}
-      references: {range: string, multivalued: true}
+      references: {range: ResearchReference, multivalued: true}
+      persistent_findings: {range: PersistentFinding, multivalued: true}
       workload: {range: WorkloadSpec}
       reports: {range: ReportSpec, multivalued: true}
       hypotheses: {range: Hypothesis, multivalued: true}
@@ -73,6 +110,34 @@ classes:
       programmatic_tool_calling: {range: boolean, ifabsent: true}
       mcp: {range: McpServerSpec, multivalued: true}
       codex: {range: CodexSpec}
+
+  ResearchReference:
+    attributes:
+      id: {range: string, required: true}
+      type: {range: ReferenceType, required: true}
+      authority: {range: ReferenceAuthority}
+      title: {range: string, required: true}
+      uri: {range: uri}
+      citation: {range: string}
+      version: {range: string}
+      accessed_at: {range: string}
+      notes: {range: string}
+
+  PersistentFinding:
+    attributes:
+      id: {range: string, required: true}
+      statement: {range: string, required: true}
+      status: {range: FindingStatus, required: true}
+      semantic_tags: {range: string, multivalued: true}
+      entities: {range: string, multivalued: true}
+      techniques: {range: string, multivalued: true}
+      tactics: {range: string, multivalued: true}
+      controls: {range: string, multivalued: true}
+      references: {range: string, multivalued: true}
+      evidence_ids: {range: string, multivalued: true}
+      confidence: {range: string}
+      created_at: {range: string}
+      supersedes: {range: string, multivalued: true}
 
   EvidenceRecord:
     attributes:
