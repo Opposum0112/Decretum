@@ -87,3 +87,17 @@ providers:
     capabilities: [network.capture]
 """, encoding="utf-8")
     assert validate_capability_providers(recipe, registry) == []
+
+
+def test_registry_declares_harnesses_integrations_and_models():
+    from sec_agent.validator import registry_errors
+    assert registry_errors() == []
+
+
+def test_capability_resolver_reports_provider_candidates():
+    from sec_agent.resolver import resolve_capabilities
+    recipe = {"capability_catalog": [{"id": "network.capture"}], "skills": [], "role_definition": {}}
+    result = resolve_capabilities(recipe)
+    assert result["capabilities"][0]["capability"] == "network.capture"
+    assert result["capabilities"][0]["providers"]
+    assert {"codex", "goose", "google_adk", "open_code", "vercel_ai"} <= set(result["harnesses"])
