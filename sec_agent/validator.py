@@ -12,6 +12,85 @@ CAPABILITY_KINDS = {"artifact", "filesystem", "process", "network", "identity", 
 CAPABILITY_RISKS = {"read", "observe", "collect", "execute", "write", "privileged", "network_access"}
 BACKENDS = {"unix", "docker", "podman", "lima", "incus", "lxc", "kvm", "firecracker", "qemu"}
 
+
+from functools import lru_cache
+
+PROVIDER_INTERFACE_TYPES = {"mcp", "api", "tool"}
+DEFAULT_PROVIDER_REGISTRY = Path(__file__).resolve().parents[1] / "schema" / "provider_registry.yaml"
+COMPUTE_PROVIDER_CAPABILITIES = {
+    "unix": {"compute.local", "workspace.execute"},
+    "local_unix": {"compute.local", "workspace.execute"},
+    "docker": {"compute.container", "workspace.execute", "compute.snapshot"},
+    "podman": {"compute.container", "workspace.execute", "compute.snapshot"},
+    "lima": {"compute.vm", "workspace.execute", "compute.snapshot"},
+    "incus": {"compute.container", "compute.vm", "workspace.execute", "compute.snapshot"},
+    "lxc": {"compute.container", "workspace.execute", "compute.snapshot"},
+    "kvm": {"compute.vm", "workspace.execute", "compute.snapshot"},
+    "firecracker": {"compute.microvm", "workspace.execute", "compute.snapshot"},
+    "qemu": {"compute.vm", "workspace.execute", "compute.snapshot"},
+}
+
+@lru_cache(maxsize=8)
+def load_provider_registry(path: str) -> dict[str, Any]:
+    registry = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(registry, dict) or not isinstance(registry.get("providers"), dict):
+        raise ValueError("provider registry must contain a providers mapping")
+    return registry
+
+def validate_provider_registry(registry: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for provider_id, provider in (registry.get("providers") or {}).items():
+        if not isinstance(provider, dict):
+            errors.append(f"provider {provider_id!r} must be a mapping")
+            continue
+        interface = provider.get("interface")
+        if not isinstance(interface, dict):
+            errors.append(f"provider {provider_id!r} requires interface")
+        elif interface.get("type") not in PROVIDER_INTERFACE_TYPES:
+            errors.append(f"provider {provider_id!r} has invalid interface type {interface.get('type')!r}")
+        capabilities = provider.get("capabilities")
+        if not isinstance(capabilities, list) or not capabilities:
+            errors.append(f"provider {provider_id!r} requires non-empty capabilities")
+    return errors
+
+def provider_capability_index(registry: dict[str, Any]) -> dict[str, list[str]]:
+    index: dict[str, list[str]] = {}
+    for provider_id, provider in (registry.get("providers") or {}).items():
+        for capability in provider.get("capabilities", []) or []:
+            index.setdefault(capability, []).append(provider_id)
+    return index
+
+def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str]:
+    """Fail compilation when a declared/required capability has no provider."""
+    try:
+        registry = load_provider_registry(str(registry_path))
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        return [f"provider registry unavailable: {exc}"]
+    errors = validate_provider_registry(registry)
+    if errors:
+        return errors
+    index = provider_capability_index(registry)
+    required = {c.get("id") for c in (recipe.get("capability_catalog", recipe.get("capabilities", [])) or [])
+                if isinstance(c, dict) and c.get("id")}
+    for skill in recipe.get("skills", []) or []:
+        if isinstance(skill, dict):
+            required.update(skill.get("capabilities", []) or [])
+    role = recipe.get("role_definition") or {}
+    if isinstance(role, dict):
+        required.update(role.get("default_capabilities", []) or [])
+    environment = recipe.get("environment") or {}
+    if isinstance(environment, dict):
+        compute = environment.get("compute") or {}
+        sandbox = environment.get("sandbox") or {}
+        if isinstance(compute, dict) and compute.get("provider"):
+            required.update(COMPUTE_PROVIDER_CAPABILITIES.get(compute["provider"], set()))
+        if isinstance(sandbox, dict) and sandbox.get("backend"):
+            required.update(COMPUTE_PROVIDER_CAPABILITIES.get(sandbox["backend"], set()))
+    for capability in sorted(required):
+        if capability and capability not in index:
+            errors.append(f"capability {capability!r} has no registered provider (MCP/API/tool)")
+    return errors
+
 def load_recipe(path: Path) -> dict[str, Any]:
     if not path.is_file(): raise FileNotFoundError(path)
     value = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -106,5 +185,8 @@ def preflight(recipe: dict[str, Any]) -> list[str]:
     return []
 
 def validate_recipe(path: Path) -> tuple[dict[str, Any], list[str], list[str]]:
-    recipe = load_recipe(path); errors = structural_validate(recipe)
+    recipe = load_recipe(path)
+    errors = structural_validate(recipe)
+    if not errors:
+        errors.extend(validate_capability_providers(recipe))
     return recipe, errors, preflight(recipe) if not errors else []
