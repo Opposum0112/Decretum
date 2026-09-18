@@ -1,7 +1,7 @@
 [project]
 name = "decretum"
-version = "0.1.0"
-description = "Declarative, sandboxed security research agent platform"
+version = "0.2.0"
+description = "Declarative security research compiler for OpenAI Agents API and Codex"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -10,12 +10,13 @@ dependencies = [
   "fastmcp>=0.1.0",
   "typer>=0.9",
   "pyyaml>=6.0",
-  "duckdb>=1.0",
-  "rich>=13.7",
   "jsonschema>=4.21",
+  "openai>=2.0.0",
+  "rich>=13.7",
 ]
 
 [project.scripts]
+decretum = "sec_agent.cli:app"
 sec-agent = "sec_agent.cli:app"
 
 [build-system]
