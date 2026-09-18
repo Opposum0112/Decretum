@@ -613,6 +613,164 @@ Local evidence
 
 For hostile workloads, use appropriate authorization and containment controls. Unix-local execution is not a strong isolation boundary; use Docker or stronger external isolation when the workload requires it.
 
+
+## Contributing
+
+Decretum is intended to grow as a **community-driven, public security-research project**. Contributions are welcome across the schema, research recipes, validation, documentation, testing, and research workflows.
+
+### What you can contribute
+
+#### 1. Research recipes
+
+Recipes are one of the easiest ways to contribute a reusable security investigation.
+
+Good recipe contributions should:
+
+- have a clear research objective
+- declare the appropriate role and skills
+- use only required capabilities
+- define the tools and environment explicitly
+- define expected evidence
+- define completion criteria
+- include relevant security-framework or threat-intelligence references when appropriate
+- avoid unnecessary privileges or network access
+- be safe to run in the documented local execution model
+
+A recipe should be understandable to another researcher without requiring knowledge of Decretum's implementation.
+
+Suggested structure:
+
+```text
+recipes/
+└── <research-topic>.yaml
+```
+
+When adding a recipe, also add validation coverage where practical.
+
+### 2. Schema contributions
+
+The LinkML schema is the foundation of Decretum.
+
+Schema changes should be treated as API/ontology changes because they can affect recipes, contracts, validators, and downstream research tooling.
+
+When proposing a schema change:
+
+1. Explain the security-research concept being added or changed.
+2. Prefer reusable concepts over recipe-specific fields.
+3. Keep Role → Skill → Capability → Tool → Evidence relationships explicit.
+4. Consider backward compatibility with existing recipes.
+5. Add or update validation tests.
+6. Update the README or examples when the user-facing model changes.
+
+Avoid adding concepts solely to support one implementation detail.
+
+### 3. Testing
+
+Every meaningful change should include appropriate tests.
+
+Run the test suite from the repository root:
+
+```bash
+uv run pytest
+```
+
+For recipe or schema changes, verify at minimum:
+
+```bash
+decretum validate recipes/<your-recipe>.yaml
+decretum compile recipes/<your-recipe>.yaml
+```
+
+For changes affecting the research contract, also inspect the generated contract and verify that the expected roles, skills, capabilities, policy, evidence requirements, and environment are preserved.
+
+Contributors should add regression tests for bugs and boundary conditions rather than relying only on manual testing.
+
+### 4. Documentation
+
+Documentation contributions are especially valuable.
+
+Examples include:
+
+- new researcher workflows
+- recipe authoring guides
+- schema explanations
+- capability examples
+- security-boundary documentation
+- troubleshooting
+- threat-research methodology
+- framework/reference integration examples
+
+Prefer documentation that explains **how a researcher uses Decretum** rather than only describing implementation internals.
+
+### 5. Bug reports
+
+Please open an issue when you find a reproducible problem.
+
+Include:
+
+- what you were trying to do
+- expected behavior
+- actual behavior
+- exact command used
+- relevant recipe or a minimal reproduction
+- validation/compiler output
+- operating system and Python version
+- Decretum commit or release version
+- relevant logs or stack traces
+
+For security-sensitive issues, **do not disclose exploit details or sensitive artifacts in a public issue**. Use the repository's designated private security-reporting mechanism when available.
+
+### 6. Feature requests and design discussions
+
+For larger changes, open a discussion or issue before implementing a substantial architectural change.
+
+Useful proposals explain:
+
+- the researcher problem
+- the proposed behavior
+- why the existing schema or workflow is insufficient
+- affected schema concepts
+- compatibility considerations
+- security implications
+- example YAML
+- expected compiled contract
+
+This helps the community review the research model before implementation details become difficult to change.
+
+### 7. Pull requests
+
+A good pull request should:
+
+- describe the user/researcher problem being solved
+- explain the architectural impact
+- keep changes focused
+- include tests
+- update examples/documentation when appropriate
+- avoid unrelated refactoring
+- explain any schema or contract compatibility impact
+
+For schema changes, include an example recipe demonstrating the new model.
+
+For new recipes, include validation coverage and explain the intended research use case.
+
+### Community principles
+
+Decretum is designed to be **open, inspectable, reproducible, and researcher-controlled**.
+
+Contributors are encouraged to:
+
+- favor explicit security boundaries
+- preserve evidence provenance
+- make research workflows reproducible
+- minimize privileges
+- avoid hidden execution behavior
+- distinguish observations from conclusions
+- document assumptions and limitations
+- keep the researcher in control of authorization decisions
+- build reusable ontology and research knowledge rather than one-off automation
+
+The goal is not simply to add more automation. The goal is to build a shared vocabulary and durable foundation for **interactive, evidence-driven security research**.
+
 ## Repository
 
 ```text
