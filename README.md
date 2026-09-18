@@ -1,255 +1,225 @@
 # Decretum
 
-**Decretum is a declarative security-research contract compiler.**
+**Decretum is a declarative local security-research contract compiler.**
 
-You describe **what you want to investigate** in a small YAML recipe. Decretum validates that recipe against a LinkML metamodel, compiles it into a machine-readable research contract, and hands that contract to the **OpenAI Agents API / Codex** for interactive investigation.
+You describe **what you want to investigate** in YAML. Decretum validates the recipe, compiles a deterministic research contract, and gives that contract to the **OpenAI Agents SDK** for model reasoning while experiments execute in a **local sandbox**.
 
-Decretum intentionally does **not** try to be another agent runtime, workflow engine, sandbox manager, or harness dispatcher.
+There is **no cloud/hosted sandbox provisioning in this branch**.
 
-## What Decretum does
+## Architecture
 
-1. **Researcher writes a recipe** — objective, inputs, environment, policy, evidence and completion criteria.
-2. **LinkML validates the shape** — required fields and allowed values are checked.
-3. **Decretum compiles the recipe** — producing a deterministic ResearchContract.
-4. **OpenAI runs the research session** — the agent decides how to investigate using the permitted environment, tools and MCP capabilities.
-5. **Researcher stays in the loop** — the agent can explain findings and request clarification or an explicit contract change when it needs something outside the contract.
-6. **Evidence and report become research artifacts** — the compiled contract remains the local source of truth for what was authorized.
+```text
+Researcher
+   |
+   v
+YAML Research Recipe
+   |
+   v
+LinkML-aligned validation
+   |
+   v
+Decretum ResearchContract
+   |
+   v
+OpenAI Agents SDK
+   |
+   +--> Local Unix sandbox
+   |
+   +--> Local Docker sandbox
+   |
+   +--> MCP / approved local tools
+   |
+   v
+observe -> hypothesize -> experiment -> evidence -> report
+```
 
-### The boundary
+The OpenAI API provides model reasoning. The local Agents SDK runtime owns sandbox execution. Commands and research artifacts do not need to be moved to a provider-managed execution environment.
 
-| Component | Responsibility |
-|---|---|
-| **Researcher** | Defines the research question, inputs and acceptable boundaries |
-| **Decretum** | Validates and compiles the declarative research contract |
-| **OpenAI Agents API / Codex** | Plans and performs the investigation interactively |
-| **Sandbox / environment** | Provides the execution boundary |
-| **MCP / tools** | Provide specialized research instruments |
-| **Evidence store** | Records what actually happened |
+## Local sandbox options
 
-> **Decretum defines what is allowed and what must be proven. Codex determines how to investigate.**
+| Backend | Execution location | Isolation |
+|---|---|---|
+| `unix` | Local machine | Process-local SDK boundary; **not a strong security boundary on Linux** |
+| `docker` | Local Docker daemon | Container boundary; preferred for untrusted workloads |
+
+Cloud/hosted sandbox backends are intentionally not part of the Decretum contract model.
+
+### Unix local
+
+Use for trusted experiments or a machine that is already externally isolated.
+
+```yaml
+environment:
+  type: local
+  sandbox:
+    backend: unix
+    inherit_host_environment: false
+  network:
+    mode: none
+```
+
+On Linux, Unix-local execution must not be treated as equivalent to a VM or container security boundary.
+
+### Docker local
+
+Use a local Docker daemon when stronger workload isolation is required.
+
+```yaml
+environment:
+  type: local
+  sandbox:
+    backend: docker
+    image: python:3.14-slim
+    inherit_host_environment: false
+  network:
+    mode: none
+```
+
+Inputs are staged into the sandbox through the Agents SDK manifest rather than by mounting the host filesystem into the research container.
 
 ## Quick start
 
-### 1. Install
+Requires Python 3.11+, a local Docker installation for Docker experiments, and an OpenAI API key for model reasoning.
 
-Requires Python 3.11+ and an OpenAI API key.
+```bash
+uv sync
+export OPENAI_API_KEY="..."
+```
 
-    uv sync
-    export OPENAI_API_KEY="..."
+For Docker support:
 
-### 2. Validate a recipe
+```bash
+uv sync --extra docker
+```
 
-    decretum validate recipes/openai-hosted-malware-analysis.yaml
+Validate:
 
-### 3. Compile without executing anything
+```bash
+decretum validate recipes/openai-hosted-malware-analysis.yaml
+```
 
-    decretum compile recipes/openai-hosted-malware-analysis.yaml
+Compile without execution:
 
-This writes:
+```bash
+decretum compile recipes/openai-hosted-malware-analysis.yaml
+```
 
-    artifacts/malware-analysis-001/research-contract.json
+Run the local experiment:
 
-### 4. Start an OpenAI research session
+```bash
+decretum run recipes/openai-hosted-malware-analysis.yaml --dry-run=false
+```
 
-The CLI is deliberately dry-run by default:
+Choose a model:
 
-    decretum run recipes/openai-hosted-malware-analysis.yaml
+```bash
+decretum run recipes/openai-hosted-malware-analysis.yaml --dry-run=false --model gpt-5.6
+```
 
-To create the OpenAI session:
+The CLI remains dry-run by default.
 
-    decretum run recipes/openai-hosted-malware-analysis.yaml --dry-run=false
+## Research contract
 
-Optionally choose the model:
+A recipe declares:
 
-    decretum run recipes/openai-hosted-malware-analysis.yaml --dry-run=false --model gpt-5.6
+- research objective and role
+- inputs and artifacts
+- local sandbox backend
+- network mode
+- capabilities and policy
+- evidence requirements
+- completion criteria
+- report formats
 
-The session metadata is persisted under the research artifact directory.
+The agent is free to choose the investigation strategy, but it cannot silently change the declared execution boundary.
 
-> **Note:** OpenAI API/session capabilities evolve. The adapter in sec_agent/openai_runner.py is intentionally isolated so the declarative schema and compiler do not depend on a particular SDK session implementation.
+If it discovers that another capability is required, it must stop or request researcher approval/contract amendment rather than provisioning a cloud sandbox or bypassing policy.
 
-## Writing a recipe
+## Example workflow
 
-A recipe should answer five questions:
-
-- **What are we trying to learn?**
-- **What inputs should the agent investigate?**
-- **Where may it execute?**
-- **What capabilities are allowed or denied?**
-- **What evidence and completion conditions are required?**
-
-Example:
-
-    apiVersion: decretum.dev/v1
-    kind: ResearchExperiment
-    id: weblogic-deserialization
-    name: WebLogic deserialization investigation
-    version: "1.0"
-    role: vulnerability_exploit_researcher
-
-    objective: >
-      Determine whether the supplied WebLogic workload exhibits
-      Java deserialization behavior and produce evidence-backed findings.
-
-    inputs:
-      workload: ./samples/weblogic.tar.gz
-
-    environment:
-      type: openai_hosted
-      network:
-        mode: none
-      privileged: false
-      host_mounts: false
-      programmatic_tool_calling: true
-
-    policy:
-      allow:
-        - artifact.read
-        - artifact.collect
-        - process.execute
-        - process.observe
-        - network.observe
-      deny:
-        - host.filesystem.write
-        - host.mount
-        - privileged.host_access
-        - unrestricted.network
-      approval_required:
-        - network.enable
-        - new_capability
-
-    evidence:
-      required:
-        - process_activity
-        - network_activity
-        - filesystem_changes
-        - exploit_indicators
-
-    completion:
-      report_required: true
-      conclusion_required: true
-
-Notice that the recipe does **not** prescribe a long sequence of agent steps. It states the research intent, boundaries and proof requirements. The agent can choose experiments within those boundaries.
-
-## Capability model
-
-Capabilities are intentionally abstract.
-
-- network.capture describes the research capability.
-- tcpdump, eBPF, a provider-native capture facility or another approved instrument can implement it.
-- The agent must not silently substitute a capability that is absent from the contract.
-
-Decretum derives an initial capability envelope from the recipe and preserves explicit policy.
-
-    {
-      "capabilities": {
-        "required": ["artifact.read", "artifact.collect", "process.execute", "process.observe"],
-        "optional": [],
-        "denied": ["host.filesystem.write", "host.mount", "privileged.host_access", "unrestricted.network"]
-      }
-    }
-
-A future environment/provider adapter can advertise which concrete implementations satisfy these capabilities. That resolution is deliberately outside the core recipe compiler.
-
-## Interactive research workflow
-
-    Researcher
-       |
-       | YAML recipe
-       v
-    Decretum / LinkML
-       |
-       | validated ResearchContract
-       v
-    OpenAI Agents API / Codex
-       |
-       +--> sandbox
-       +--> MCP
-       +--> approved tools
-       |
-       v
-    observe -> hypothesize -> experiment -> collect evidence
-       |
-       +---- need clarification/approval? ----> Researcher
-       |
-       v
-    completion criteria satisfied
-       |
-       v
-    evidence-backed report
-
-A research session can therefore look like:
-
-    Researcher: Investigate this sample.
-
-    Codex: I observed process X and indicator Y.
-           I need network capture to test hypothesis Z.
-
-    Researcher: Continue.
-
-    Codex: Runs the permitted experiment, compares evidence,
-           explains the result, and updates the research conclusion.
-
-    Codex: The required evidence is complete. Here is the report.
-
-## Repository layout
-
-    schema/
-      sec_research_metamodel.yaml    # LinkML source of truth
-
-    recipes/
-      openai-hosted-malware-analysis.yaml
-
-    sec_agent/
-      validator.py                    # Recipe validation
-      compiler.py                     # Recipe -> ResearchContract
-      openai_runner.py                # OpenAI session adapter
-      cli.py                          # End-user CLI
-
-    tests/
-      test_validator.py
-
-## Research artifacts
-
-Each run can preserve:
-
-    artifacts/<research-id>/
-      research-contract.json
-      openai-session.json
-      evidence/
-      report/
-
-The **research contract** is the durable local record of the requested research semantics. The OpenAI session is the live execution context.
+```text
+Researcher
+   |
+   | "Investigate this sample"
+   v
+Decretum
+   |
+   | validate + compile
+   v
+OpenAI Agents SDK
+   |
+   | local Docker sandbox
+   v
+Codex/agent reasoning
+   |
+   +-- inspect input
+   +-- run experiment
+   +-- observe process/network activity
+   +-- collect evidence
+   +-- form next hypothesis
+   |
+   +-- needs new capability?
+          |
+          v
+      Researcher approval
+          |
+          v
+      amended contract
+   |
+   v
+Evidence-backed report
+```
 
 ## Safety model
 
-Decretum treats the YAML contract as a policy boundary:
+Decretum rejects privileged execution and host filesystem mounts by default. Recipes can explicitly deny capabilities such as:
 
-- privileged execution is rejected by default;
-- host filesystem mounts are rejected;
-- denied capabilities are explicit;
-- new capabilities can require researcher approval;
-- the compiler never executes a workload;
-- the default CLI mode creates no OpenAI session;
-- execution belongs to the configured agent environment, not the Decretum host process.
+```yaml
+policy:
+  deny:
+    - host.filesystem.write
+    - host.mount
+    - privileged.host_access
+    - unrestricted.network
+    - cloud.sandbox
+```
 
-For real malware or exploit research, use an appropriately isolated environment and follow your organization's authorization and containment requirements.
+The compiler never executes the workload. Execution is performed by the selected local Agents SDK sandbox.
 
-## Development
+For malware, exploit, or other hostile workload research, use Docker or a stronger externally isolated environment and apply appropriate authorization and containment controls. Unix-local execution should be reserved for trusted workloads.
 
-    uv sync
-    uv run pytest
-    uv run decretum validate recipes/openai-hosted-malware-analysis.yaml
-    uv run decretum compile recipes/openai-hosted-malware-analysis.yaml
+## Repository layout
+
+```text
+schema/
+  sec_research_metamodel.yaml
+
+recipes/
+  openai-hosted-malware-analysis.yaml   # legacy filename; recipe is local Docker
+
+sec_agent/
+  validator.py
+  compiler.py
+  openai_runner.py
+  cli.py
+
+tests/
+  test_validator.py
+```
 
 ## Design principles
 
-1. **Declarative over procedural** — recipes describe research intent, not agent choreography.
-2. **Contract over runtime** — Decretum owns the research contract; the agent runtime owns execution.
-3. **Capability over tool** — contracts request capabilities rather than hard-coding implementation details.
-4. **Human-in-the-loop** — researchers can clarify, approve and redirect the investigation.
-5. **Reproducibility** — compiled contracts are deterministic and persisted as research artifacts.
-6. **Provider isolation** — OpenAI-specific session logic is an adapter, not part of the domain model.
+1. **Local-first** — experiment execution stays on the researcher's machine.
+2. **No cloud sandbox provisioning** — hosted execution is outside this architecture.
+3. **Declarative over procedural** — recipes describe intent and boundaries.
+4. **Contract over runtime** — Decretum owns the research contract; Agents SDK owns execution.
+5. **Capability over tool** — capabilities remain abstract from concrete instruments.
+6. **Human-in-the-loop** — researchers can approve capability changes.
+7. **Reproducibility** — contracts and run metadata are persisted locally.
+8. **Minimal runtime** — Decretum does not maintain its own sandbox, harness, or agent orchestration engine.
 
 ## Status
 
-This branch is the **OpenAI API refactor** of Decretum. The former Lima/Podman/Docker provider and Goose/Pi/headless dispatcher code is intentionally removed from the core architecture. Those concerns can be implemented as future environment/tool adapters without reintroducing a custom Decretum runtime.
+This branch is the **local-provider OpenAI Agents refactor**. The previous hosted-session implementation and custom Lima/Podman/Docker provider runtime are intentionally removed from the architecture.
+
+The OpenAI Agents SDK is the execution adapter; Decretum remains the declarative security-research contract and control boundary.
