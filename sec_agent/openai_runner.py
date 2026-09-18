@@ -101,7 +101,7 @@ async def _run(contract: dict[str, Any], workspace: Path, prompt: str, session_d
         "experiments. Keep conclusions tied to observed evidence and do not "
         "execute through a hosted sandbox."
     )
-    session = SQLiteSession(contract["research"]["id"], str(session_db, ledger_context))
+    session = SQLiteSession(contract["research"]["id"], str(session_db))
     return await Runner.run(agent, prompt, session=session)
 
 
