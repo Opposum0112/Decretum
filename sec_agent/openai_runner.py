@@ -1,4 +1,8 @@
-"""OpenAI Agents SDK adapter with local-only sandbox execution."""
+"""Codex CLI executor for local Decretum research contracts.
+
+Decretum owns the contract and policy. Codex owns interactive local execution.
+No hosted/cloud sandbox is provisioned by this adapter.
+"""
 from __future__ import annotations
 
 import asyncio
@@ -8,127 +12,113 @@ from pathlib import Path
 from typing import Any
 
 
+SANDBOX_MODES = {"read-only", "workspace-write", "danger-full-access"}
+APPROVAL_POLICIES = {"untrusted", "on-request", "never"}
+
+
 def _instructions(contract: dict[str, Any]) -> str:
-    return """You are the execution agent for a Decretum security research project.
+    return f"""You are the Codex execution agent for a Decretum security research project.
 
-Treat the ResearchContract below as authoritative. Decretum defines the research
-goal, inputs, capabilities, evidence requirements, completion criteria and policy.
-You decide how to investigate. Never invent capabilities or bypass denied policy.
+The Decretum ResearchContract below is authoritative. Follow its objective,
+capabilities, evidence requirements, completion criteria, and policy.
 
-Execution boundary:
-- All experiment commands MUST execute in the selected local sandbox.
-- Never request, create, or use a hosted/cloud sandbox.
-- Never move a workload to provider-managed execution.
-- If the local backend cannot satisfy a requirement, stop and request a contract
-  change or researcher approval.
+Execution rules:
+- Execute locally through the Codex runtime only.
+- Do not provision or request a hosted/cloud sandbox.
+- Do not silently widen filesystem, network, privilege, or tool access.
+- Never bypass a denied capability.
+- If a required capability is outside the contract, stop and request researcher
+  approval or a contract amendment.
+- Keep experiment artifacts and reports in the declared workspace.
+- Prefer the safest useful experiment first.
+- Capture evidence before drawing conclusions.
 
 Research loop:
-1. Understand the objective and inputs.
-2. Inspect the local sandbox and staged inputs.
-3. Form and test hypotheses with permitted capabilities.
-4. Capture required evidence.
-5. Ask for clarification/approval when policy requires it.
-6. Run additional experiments only inside the declared local sandbox.
-7. Produce the evidence-backed report when completion criteria are satisfied.
+1. Inspect the contract and workspace.
+2. Inspect available inputs and local research tools.
+3. Form a hypothesis.
+4. Run a bounded experiment.
+5. Collect and preserve evidence.
+6. Reassess the hypothesis.
+7. Continue only within policy.
+8. Produce the requested evidence-backed report.
 
 ResearchContract:
-""" + json.dumps(contract, indent=2, sort_keys=True)
+{json.dumps(contract, indent=2, sort_keys=True)}
+"""
 
 
-def _sample_entries(contract: dict[str, Any], recipe_dir: Path) -> dict[str, Any]:
-    from agents.sandbox.entries import LocalDir, LocalFile
-
-    entries: dict[str, Any] = {}
-    inputs = contract.get("inputs", {})
-    if not isinstance(inputs, dict):
-        return entries
-
-    values = []
-    for key in ("sample", "workload", "artifact"):
-        if inputs.get(key):
-            values.append(inputs[key])
-    values.extend(inputs.get("artifacts", []) or [])
-
-    for value in values:
-        source = (recipe_dir / str(value)).resolve()
-        if source.is_file():
-            entries[f"input/{source.name}"] = LocalFile(src=source)
-        elif source.is_dir():
-            entries[f"input/{source.name}"] = LocalDir(src=source)
-        else:
-            raise FileNotFoundError(f"Research input does not exist: {source}")
-    return entries
-
-
-def _build_sandbox(contract: dict[str, Any], recipe_dir: Path) -> Any:
-    from agents.sandbox import Manifest, SandboxRunConfig
-    from agents.sandbox.sandboxes.unix_local import UnixLocalSandboxClient
-
+def _codex_options(contract: dict[str, Any], workspace: Path) -> tuple[str, dict[str, Any], dict[str, Any]]:
     environment = contract["environment"]
-    sandbox = environment["sandbox"]
-    backend = sandbox["backend"]
-    manifest = Manifest(entries=_sample_entries(contract, recipe_dir))
+    codex = environment.get("codex", {})
+    sandbox_mode = codex.get("sandbox_mode", "workspace-write")
+    approval_policy = codex.get("approval_policy", "on-request")
+    if sandbox_mode not in SANDBOX_MODES:
+        raise ValueError(f"Unsupported Codex sandbox_mode: {sandbox_mode}")
+    if approval_policy not in APPROVAL_POLICIES:
+        raise ValueError(f"Unsupported Codex approval_policy: {approval_policy}")
 
-    if backend == "unix":
-        client = UnixLocalSandboxClient(inherit_host_environment=False)
-        options = None
-    elif backend == "docker":
-        try:
-            from agents.sandbox.sandboxes.docker import (
-                DockerSandboxClient,
-                DockerSandboxClientOptions,
-            )
-            import docker
-        except ImportError as exc:
-            raise RuntimeError(
-                "Docker backend requires the Agents SDK Docker extra and a local Docker daemon."
-            ) from exc
-        client = DockerSandboxClient(docker.from_env())
-        network_mode = environment.get("network", {}).get("mode", "none")
-        options = DockerSandboxClientOptions(
-            image=sandbox["image"],
-            network_mode=network_mode,
-        )
-    else:
-        raise ValueError(f"Unsupported local sandbox backend: {backend}")
-
-    return SandboxRunConfig(client=client, options=options, manifest=manifest)
+    thread_options = {
+        "model": codex.get("model") or os.getenv("DECRETUM_MODEL", "gpt-5.6"),
+        "model_reasoning_effort": codex.get("reasoning_effort", "medium"),
+        "network_access_enabled": bool(codex.get("network_access_enabled", False)),
+        "web_search_mode": codex.get("web_search_mode", "disabled"),
+        "approval_policy": approval_policy,
+    }
+    turn_options = {
+        "idle_timeout_seconds": int(codex.get("idle_timeout_seconds", 120)),
+    }
+    return sandbox_mode, thread_options, turn_options
 
 
-async def _run(contract: dict[str, Any], recipe_dir: Path, model: str) -> Any:
-    from agents import Runner, SandboxAgent
-    from agents.run import RunConfig
+async def _run(contract: dict[str, Any], workspace: Path) -> Any:
+    from agents import Agent, Runner
+    from agents.extensions.experimental.codex import ThreadOptions, TurnOptions, codex_tool
 
-    sandbox_config = _build_sandbox(contract, recipe_dir)
-    client = sandbox_config.client
-    agent = SandboxAgent(
-        name=f"Decretum researcher: {contract['research']['id']}",
-        model=model,
-        instructions=_instructions(contract),
+    sandbox_mode, thread_options, turn_options = _codex_options(contract, workspace)
+    environment = contract["environment"]
+    codex = environment.get("codex", {})
+
+    tool = codex_tool(
+        name="codex_researcher",
+        sandbox_mode=sandbox_mode,
+        working_directory=str(workspace),
+        skip_git_repo_check=bool(codex.get("skip_git_repo_check", False)),
+        default_thread_options=ThreadOptions(**thread_options),
+        default_turn_options=TurnOptions(**turn_options),
+        persist_session=bool(codex.get("persist_session", True)),
     )
-    try:
-        return await Runner.run(
-            agent,
-            "Begin the research inside the local sandbox. Inspect staged inputs, "
-            "verify capabilities, and perform the safest useful experiment. "
-            "Do not execute outside the sandbox.",
-            run_config=RunConfig(sandbox=sandbox_config),
-        )
-    finally:
-        close = getattr(client, "aclose", None)
-        if close:
-            await close()
+
+    agent = Agent(
+        name="Decretum Codex Researcher",
+        instructions=_instructions(contract),
+        tools=[tool],
+    )
+
+    prompt = (
+        "Begin the research now. Use the codex_researcher tool for all workspace "
+        "and experiment operations. Do not execute research through any hosted "
+        "sandbox or non-Codex execution path."
+    )
+    return await Runner.run(agent, prompt)
 
 
 def create_session(
     contract: dict[str, Any],
     *,
-    recipe_dir: Path,
+    workspace: Path,
     model: str | None = None,
 ) -> Any:
-    if not os.getenv("OPENAI_API_KEY"):
-        raise RuntimeError("OPENAI_API_KEY is required for model reasoning.")
-    return asyncio.run(_run(contract, recipe_dir, model or os.getenv("DECRETUM_MODEL", "gpt-5.6")))
+    """Run a complete local Codex research session."""
+    if model:
+        contract = json.loads(json.dumps(contract))
+        contract.setdefault("environment", {}).setdefault("codex", {})["model"] = model
+    if not (os.getenv("CODEX_API_KEY") or os.getenv("OPENAI_API_KEY")):
+        raise RuntimeError("CODEX_API_KEY or OPENAI_API_KEY is required for Codex.")
+    workspace = workspace.resolve()
+    if not workspace.exists():
+        raise FileNotFoundError(f"Codex workspace does not exist: {workspace}")
+    return asyncio.run(_run(contract, workspace))
 
 
 def save_session(result: Any, artifact_dir: Path) -> Path:
@@ -137,6 +127,6 @@ def save_session(result: Any, artifact_dir: Path) -> Path:
         "final_output": getattr(result, "final_output", None),
         "last_agent": getattr(getattr(result, "last_agent", None), "name", None),
     }
-    path = artifact_dir / "openai-run.json"
+    path = artifact_dir / "codex-run.json"
     path.write_text(json.dumps(data, indent=2, default=str) + "\n", encoding="utf-8")
     return path
