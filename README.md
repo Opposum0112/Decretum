@@ -1,6 +1,8 @@
 # Decretum
 
-**Decretum is a local, interactive security-research workbench for Codex.**
+**Decretum defines the security-research ontology and boundaries. Codex is the interactive researcher that selects, composes, orchestrates, and executes the declared skills.**
+
+Decretum is a local, interactive security-research workbench for Codex. It defines the schema, validates the research recipe, compiles the authorized research contract, and preserves the evidence and findings produced during the investigation.
 
 Describe a security investigation in a small YAML recipe. Decretum validates the research boundary, creates a durable research contract, and lets Codex investigate interactively using the local workspace and approved tools.
 
@@ -475,22 +477,103 @@ The important principle is:
 
 ---
 
-## How the pieces fit together
+## Architecture and boundaries
 
-| Component | Responsibility |
-|---|---|
-| **Researcher** | Defines questions, reviews evidence, redirects research, approves requested changes |
-| **Decretum** | Validates recipes, compiles contracts, enforces declared boundaries, persists research state |
-| **Codex** | Performs interactive reasoning and local research work |
-| **Local workspace** | Holds experiments and evidence |
-| **MCP/tools** | Provide specialized research capabilities |
-| **Research ledger** | Preserves investigation history |
-| **Semantic findings** | Preserve reusable research knowledge |
-| **References** | Connect findings to frameworks and intelligence |
-| **Report** | Communicates the evidence-backed result |
+Decretum separates **what is allowed** from **how the investigation is performed**.
 
----
+```text
+                         DECRETUM
+       ┌─────────────────────────────────────────┐
+       │ Security-research ontology (LinkML)    │
+       │ Role → Skill → Capability → Tool       │
+       │ Evidence → Finding → Reference         │
+       └───────────────────┬─────────────────────┘
+                           │
+                    Schema boundary
+                           │
+                           ▼
+                 ┌───────────────────┐
+                 │ Research Recipe   │
+                 │ Objective / Input │
+                 │ Role / Skills     │
+                 │ Capabilities      │
+                 │ Policy / Env     │
+                 │ Evidence / Done  │
+                 └─────────┬─────────┘
+                           │
+                  Execution boundary
+                           │
+                           ▼
+                 Research Contract
+                           │
+                           ▼
+                    ┌────────────┐
+                    │   CODEX    │
+                    │ Select     │
+                    │ Compose    │
+                    │ Orchestrate│
+                    │ Execute    │
+                    │ Analyze    │
+                    └─────┬──────┘
+                          │
+                   Local Unix/Docker
+                          │
+                    Tools / MCP
+                          │
+                          ▼
+             Evidence → Findings → Report
+```
 
+### Schema boundary — Decretum defines the vocabulary
+
+The LinkML schema defines what a valid security investigation can express. It establishes the ontology for roles, skills, capabilities, tools, evidence, findings, references, and policy.
+
+The schema is the **ontology and capability vocabulary boundary**. It does not orchestrate an investigation.
+
+### Recipe boundary — the investigation authorization boundary
+
+A recipe is an instance of that ontology for one concrete investigation. It answers: **What is this investigation authorized to do?**
+
+The recipe specifies the objective, inputs, role, skills, capabilities, tools, environment, policy, evidence requirements, and completion criteria.
+
+A capability can exist in the schema while a particular recipe chooses not to declare it, or requires researcher approval for it.
+
+The recipe is therefore the **specific research authorization/execution boundary**.
+
+### Compiler — freezes the boundary
+
+Decretum validates the recipe and compiles it into a deterministic `ResearchContract`. The contract is the machine-readable snapshot of the effective role, skills, capabilities, tools, environment, policy, evidence requirements, completion criteria, and references.
+
+Codex operates from this compiled contract rather than inventing a new security boundary during execution.
+
+### Codex — the interactive researcher and orchestrator
+
+Codex owns the dynamic part of research. It can understand the objective, inspect evidence, select and compose declared skills, determine investigation order, form hypotheses, propose experiments, execute permitted operations, collect evidence, analyze results, and ask the researcher for clarification or approval.
+
+Decretum does not dictate the investigation sequence.
+
+> **Decretum constrains the research space; Codex explores that space.**
+
+### Tools and MCP — instruments, not the policy authority
+
+Tools and MCP servers provide concrete instrumentation and operations. They do not define research authorization by themselves. A tool is usable only when compatible with the effective recipe/contract boundary and policy.
+
+### Research state — persistent knowledge boundary
+
+Evidence, hypotheses, experiments, findings, references, and session state are persisted locally. The research ledger preserves the semantic history of the investigation separately from the Codex conversation.
+
+### Boundary summary
+
+| Boundary | Question | Owner |
+|---|---|---|
+| **Schema** | What concepts and capabilities exist? | Decretum / LinkML |
+| **Recipe** | What is authorized for this investigation? | Researcher + Decretum policy |
+| **Contract** | What exact boundary was compiled? | Decretum compiler |
+| **Orchestration** | What should happen next? | Codex |
+| **Execution** | How is an authorized operation performed? | Codex + local tools/MCP |
+| **Evidence** | What was actually observed? | Research state |
+| **Findings** | What has the evidence established? | Researcher/Codex with provenance |
+| **Report** | How is the result communicated? | Research workflow |
 ## Design philosophy
 
 Decretum intentionally does **not** try to become another agent framework.
@@ -591,11 +674,7 @@ skills:
     kind: malware_analysis
     description: Analyze process, filesystem, and network behavior
     capabilities:
-      - id: process.observe
-        name: Observe processes
-        kind: process
-        risk: observe
-        description: Inspect process execution and metadata
+      - process.observe
 ```
 
 This makes the security boundary understandable to both humans and automation: **what the researcher wants, what the agent may do, which instruments may be used, and what evidence must come back**.
