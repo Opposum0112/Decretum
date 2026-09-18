@@ -198,6 +198,95 @@ Decretum is the contract and capability boundary; the autonomous agent/harness i
 
 The capability catalog is intentionally extensible: new tools, APIs, MCP servers, integrations, harnesses, and model families can be registered without changing the meaning of an existing capability. This allows an implementation to evolve while recipes remain reusable.
 
+## Capability evolution
+
+A capability is added to Decretum through a governed lifecycle. Researchers do **not** need to bind a capability directly to one tool. The capability describes the stable research action; providers and integrations supply interchangeable implementations.
+
+```mermaid
+flowchart TD
+    A[New research need] --> B[Define CapabilitySpec in LinkML schema]
+    B --> C[Schema validation]
+    C -->|Invalid| B
+    C -->|Valid| D[Register MCP / API / Tool providers]
+    D --> E[Register integrations]
+    E --> F[Identify compatible harnesses]
+    F --> G[Identify compatible LLM families]
+    G --> H[Capability Resolver]
+    H --> I{Readiness}
+    I -->|Unavailable| D
+    I -->|Ready| J[Capability becomes recipe-usable]
+    J --> K[Compose Research Recipe]
+    K --> L[Validate recipe]
+    L --> M[Compile frozen ResearchContract]
+    M --> N[Autonomous agent / harness]
+    N --> O[Execute research]
+    O --> P[Evidence]
+    P --> Q[Finding + Report]
+    Q --> R[Persistent Research Store]
+    R --> S[Future research]
+```
+
+### Adding a capability
+
+For example, a researcher needs cloud audit-log querying:
+
+```yaml
+capability_catalog:
+  - id: cloud.audit.query
+    name: Cloud Audit Query
+    kind: cloud
+    risk: read
+    description: Query cloud audit records for security investigation
+```
+
+The implementation is then registered independently:
+
+```text
+cloud.audit.query
+├── AWS CloudTrail API
+├── Azure Monitor API
+├── GCP Audit Logs API
+└── Cloud Audit MCP
+```
+
+The resolver checks which registered implementations are usable in the current environment. A capability can have multiple providers:
+
+```text
+cloud.audit.query
+├── cloudtrail-api     API    READY
+├── azure-monitor      API    READY
+├── gcp-audit-api      API    UNAVAILABLE
+└── cloud-audit-mcp    MCP    READY
+```
+
+The capability is therefore the reusable semantic contract; the provider is an implementation choice. Adding another provider later does not require rewriting existing recipes.
+
+### Capability evolution rules
+
+1. **Define** the capability in the research schema.
+2. **Validate** its identity, kind, risk and description.
+3. **Implement** it through one or more MCP/API/tool providers.
+4. **Register** integrations that expose those providers.
+5. **Register or verify** compatible autonomous harnesses and LLM families.
+6. **Resolve** provider candidates and local prerequisites.
+7. **Use** the capability in recipes only after validation.
+8. **Compile** recipes into frozen contracts.
+9. **Execute** through the selected autonomous researcher.
+10. **Persist** evidence, findings and reports so later research can build on the result.
+
+This means the capability catalog can continuously grow while existing recipes remain stable:
+
+```text
+Stable capability semantics
+          │
+          ├── provider A
+          ├── provider B
+          ├── integration C
+          └── integration D
+                 ↓
+        interchangeable execution
+```
+
 ## Persistent research state
 
 Each research ID keeps durable local artifacts such as:
@@ -218,15 +307,29 @@ The research ledger preserves evidence, hypotheses, findings, references, semant
 
 ```mermaid
 flowchart TB
-    S[LinkML Schema] --> R[Research Recipe]
-    R --> C[Contract Compiler]
-    C --> X[Codex]
-    X --> P[Local Compute]
-    X --> I[Security Instrumentation]
-    P --> E[Evidence]
-    I --> E
-    E --> L[Research Ledger]
-    L --> X
+    subgraph EV[Capability Evolution]
+      N[New research need] --> SC[LinkML CapabilitySpec]
+      SC --> SV[Schema validation]
+      SV --> PR[Provider registry]
+      PR --> IR[Integration registry]
+      IR --> HR[Harness registry]
+      HR --> MR[Model registry]
+      MR --> CR[Capability Resolver]
+    end
+
+    CR --> RR{READY?}
+    RR -->|No| PR
+    RR -->|Yes| RC[Research Recipe]
+    RC --> RV[Recipe Validator]
+    RV --> CC[Contract Compiler]
+    CC --> CT[Frozen ResearchContract]
+    CT --> AH[Autonomous Harness]
+    AH --> EX[Research / Experiments]
+    EX --> EV2[Evidence]
+    EV2 --> FS[Findings + Report]
+    FS --> PS[Persistent Research Store]
+    PS --> AH
+    PS --> CR
 ```
 
 ### Clear boundaries
