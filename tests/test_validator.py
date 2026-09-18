@@ -33,3 +33,22 @@ def test_codex_settings_are_compiled_and_cloud_is_denied():
     assert codex["approval_policy"] == "on-request"
     assert codex["network_access_enabled"] is False
     assert "cloud.sandbox" in contract.contract["capabilities"]["denied"]
+
+
+def test_undeclared_skill_capability_is_rejected():
+    recipe = load_recipe(Path("recipes/openai-hosted-malware-analysis.yaml"))
+    recipe["skills"][0]["capabilities"][0]["id"] = "process.unknown"
+    errors = structural_validate(recipe)
+    assert any("undeclared capability" in e for e in errors)
+
+def test_capability_tool_is_validated():
+    recipe = load_recipe(Path("recipes/openai-hosted-malware-analysis.yaml"))
+    recipe["capabilities"][0]["tools"] = ["not-a-tool"]
+    errors = structural_validate(recipe)
+    assert any("unsupported capability tool" in e for e in errors)
+
+def test_skill_capability_metadata_must_match():
+    recipe = load_recipe(Path("recipes/openai-hosted-malware-analysis.yaml"))
+    recipe["skills"][0]["capabilities"][0]["risk"] = "write"
+    errors = structural_validate(recipe)
+    assert any("conflicts on risk" in e for e in errors)
