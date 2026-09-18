@@ -66,7 +66,7 @@ def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = 
         registry = load_provider_registry(str(registry_path))
     except (OSError, ValueError, yaml.YAMLError) as exc:
         return [f"provider registry unavailable: {exc}"]
-    errors = validate_provider_registry(registry)
+    errors = registry_errors(registry_path)
     if errors:
         return errors
     index = provider_capability_index(registry)
@@ -89,6 +89,37 @@ def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = 
     for capability in sorted(required):
         if capability and capability not in index:
             errors.append(f"capability {capability!r} has no registered provider (MCP/API/tool)")
+    return errors
+
+
+def registry_errors(registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str]:
+    """Validate the complete provider/harness/integration/model registry."""
+    try:
+        registry = load_provider_registry(str(registry_path))
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        return [f"provider registry unavailable: {exc}"]
+    errors = validate_provider_registry(registry)
+    providers = registry.get("providers", {}) or {}
+    for integration_id, integration in (registry.get("integrations", {}) or {}).items():
+        if not isinstance(integration, dict):
+            errors.append(f"integration {integration_id!r} must be a mapping")
+            continue
+        if integration.get("type") not in PROVIDER_INTERFACE_TYPES:
+            errors.append(f"integration {integration_id!r} has invalid interface type")
+        if integration.get("provider") not in providers:
+            errors.append(f"integration {integration_id!r} references unknown provider {integration.get('provider')!r}")
+    for harness_id, harness in (registry.get("harnesses", {}) or {}).items():
+        if not isinstance(harness, dict):
+            errors.append(f"harness {harness_id!r} must be a mapping")
+            continue
+        if harness.get("kind") != "agent":
+            errors.append(f"harness {harness_id!r} must have kind 'agent'")
+        for interface in harness.get("supported_interfaces", []) or []:
+            if interface not in PROVIDER_INTERFACE_TYPES:
+                errors.append(f"harness {harness_id!r} has invalid interface {interface!r}")
+    for model_id, model in (registry.get("models", {}) or {}).items():
+        if not isinstance(model, dict) or model.get("kind") != "llm":
+            errors.append(f"model {model_id!r} must have kind 'llm'")
     return errors
 
 def load_recipe(path: Path) -> dict[str, Any]:
