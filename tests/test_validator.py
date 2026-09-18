@@ -23,3 +23,13 @@ def test_compiler_produces_deterministic_contract():
     assert a.contract_id == b.contract_id
     assert a.contract["kind"] == "ResearchContract"
     assert "process.execute" in a.contract["capabilities"]["required"]
+
+
+def test_codex_settings_are_compiled_and_cloud_is_denied():
+    recipe = load_recipe(Path("recipes/openai-hosted-malware-analysis.yaml"))
+    contract = compile_recipe(recipe, Path("artifacts/test-codex"))
+    codex = contract.contract["environment"]["codex"]
+    assert codex["sandbox_mode"] == "workspace-write"
+    assert codex["approval_policy"] == "on-request"
+    assert codex["network_access_enabled"] is False
+    assert "cloud.sandbox" in contract.contract["capabilities"]["denied"]
