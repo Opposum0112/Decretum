@@ -12,10 +12,10 @@ ROLE_VALUES = {
     "detection_engineer",
     "vulnerability_exploit_researcher",
 }
-TOOLS = {"tetragon", "bpftrace", "strace", "tcpdump", "tshark"}
+TOOLS = {"sysdig", "falco", "tracee", "tetragon", "bpftrace", "bcc", "libbpf", "ebpf_exporter", "strace", "ltrace", "perf", "ftrace", "auditd", "auditbeat", "osquery", "procmon", "psutil", "tcpdump", "tshark", "dumpcap", "wireshark", "zeek", "suricata", "snort", "netsniff_ng", "conntrack", "nftables", "iptables", "ethtool", "ss", "ip", "dig", "resolvectl", "bpftool", "pahole", "opensnoop", "execsnoop", "tcpconnect", "tcplife", "filetop", "biolatency", "runqlat", "funccount", "volatility", "rekall", "yara", "clamav", "ghidra", "radare2", "binwalk", "strings", "readelf", "objdump", "lsof", "nsenter", "capsh", "unshare"}
 CAPABILITY_KINDS = {"artifact", "filesystem", "process", "network", "identity", "cloud", "container", "instrumentation", "analysis", "reporting"}
 CAPABILITY_RISKS = {"read", "observe", "collect", "execute", "write", "privileged", "network_access"}
-BACKENDS = {"unix", "docker"}
+BACKENDS = {"unix", "docker", "podman", "lima", "incus", "lxc", "kvm", "firecracker", "qemu"}
 
 
 def load_recipe(path: Path) -> dict[str, Any]:
@@ -132,7 +132,7 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
         backend = sandbox.get("backend")
         if backend not in BACKENDS:
             errors.append("environment.sandbox.backend must be unix or docker")
-        if backend == "docker" and not sandbox.get("image"):
+        if backend in {"docker", "podman"} and not sandbox.get("image"):
             errors.append("Docker sandbox requires environment.sandbox.image")
         if sandbox.get("inherit_host_environment", False):
             errors.append("host environment inheritance must remain disabled")
@@ -177,6 +177,8 @@ def preflight(recipe: dict[str, Any]) -> list[str]:
     backend = sandbox.get("backend")
     if backend == "docker":
         return ["Docker backend selected: local Docker daemon must be available"]
+    if backend in {"podman", "lima", "incus", "lxc", "kvm", "firecracker", "qemu"}:
+        return [f"{backend} backend selected: local provider must be installed and available"]
     if backend == "unix":
         return ["Unix-local backend selected: commands execute with host permissions; use only for trusted workloads or an externally isolated host"]
     return []
