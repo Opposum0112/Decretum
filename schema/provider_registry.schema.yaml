@@ -1,0 +1,32 @@
+id: https://decretum.dev/schema/provider-registry
+name: provider_registry
+title: Decretum Capability Provider Registry
+
+enums:
+  ProviderInterfaceType:
+    permissible_values:
+      mcp: {}
+      api: {}
+      tool: {}
+
+classes:
+  ProviderInterface:
+    attributes:
+      type: {range: ProviderInterfaceType, required: true}
+      executable: {range: string}
+      endpoint: {range: string}
+      server: {range: string}
+
+  CapabilityProvider:
+    attributes:
+      id: {range: string, required: true}
+      interface: {range: ProviderInterface, required: true}
+      capabilities: {range: string, multivalued: true, required: true}
+
+  CapabilityProviderRegistry:
+    tree_root: true
+    attributes:
+      apiVersion: {range: string, required: true}
+      kind: {range: string, required: true}
+      version: {range: string, required: true}
+      providers: {range: CapabilityProvider, multivalued: true, required: true}
