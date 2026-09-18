@@ -69,6 +69,19 @@ classes:
       privileged: {range: boolean, ifabsent: false}
       programmatic_tool_calling: {range: boolean, ifabsent: true}
       mcp: {range: McpServerSpec, multivalued: true}
+      codex: {range: CodexSpec}
+
+  CodexSpec:
+    attributes:
+      sandbox_mode: {range: string, ifabsent: workspace-write}
+      approval_policy: {range: string, ifabsent: on-request}
+      network_access_enabled: {range: boolean, ifabsent: false}
+      web_search_mode: {range: string, ifabsent: disabled}
+      model: {range: string}
+      reasoning_effort: {range: string, ifabsent: medium}
+      idle_timeout_seconds: {range: integer, minimum_value: 1, ifabsent: 120}
+      persist_session: {range: boolean, ifabsent: true}
+      skip_git_repo_check: {range: boolean, ifabsent: false}
 
   SandboxSpec:
     attributes:
