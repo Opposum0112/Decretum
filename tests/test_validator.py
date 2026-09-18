@@ -43,7 +43,7 @@ def test_undeclared_skill_capability_is_rejected():
 
 def test_capability_tool_is_validated():
     recipe = load_recipe(Path("recipes/openai-hosted-malware-analysis.yaml"))
-    recipe["capabilities"][0]["tools"] = ["not-a-tool"]
+    recipe["capability_catalog"][0]["tools"] = ["not-a-tool"]
     errors = structural_validate(recipe)
     assert any("unsupported capability tool" in e for e in errors)
 
