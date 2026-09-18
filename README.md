@@ -627,3 +627,38 @@ Codex does **not** expand the contract silently. New privileges, capabilities, t
 Decretum is intentionally local-first. The current execution boundary is Unix or Docker on the researcher's machine. It does not provision a hosted/cloud sandbox.
 
 This is especially important for security research: the recipe describes the permitted boundary, the validator checks it, the compiler freezes it into a contract, and Codex operates inside that contract.
+
+
+## Reusable roles and skills
+
+For larger research programs, roles and skills can be treated as reusable catalog entries instead of being invented for each experiment.
+
+A role describes **who is performing the research** and its normal skill/capability boundary:
+
+```yaml
+role_definition:
+  id: threat_researcher
+  description: Security researcher investigating runtime behavior
+  skills:
+    - malware.behavior-analysis
+  default_capabilities:
+    - process.observe
+    - network.capture
+  allowed_tools:
+    - strace
+    - tetragon
+    - tcpdump
+    - tshark
+```
+
+The recipe can then contain a skill catalog and capability catalog. The compiler preserves these definitions and produces a normalized contract for Codex.
+
+This gives organizations a reusable vocabulary:
+
+- **Role** — research responsibility and baseline boundary.
+- **Skill** — a composable research method.
+- **Capability** — the specific operation a skill requires.
+- **Tool** — an instrument that implements or supports the capability.
+- **Evidence** — the observable output required from the activity.
+
+Codex remains the orchestrator. The catalogs do not become an execution engine; they give Codex a validated vocabulary and security boundary to reason over.
