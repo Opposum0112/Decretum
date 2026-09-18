@@ -34,6 +34,37 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
 
     if recipe.get("role") not in ROLE_VALUES:
         errors.append(f"invalid role: {recipe.get('role')!r}")
+    role_definition = recipe.get("role_definition")
+    if role_definition is not None:
+        if not isinstance(role_definition, dict):
+            errors.append("role_definition must be a mapping")
+        elif role_definition.get("id") != recipe.get("role"):
+            errors.append("role_definition.id must match recipe.role")
+        else:
+            for sid in role_definition.get("skills", []) or []:
+                if not isinstance(sid, str):
+                    errors.append("role_definition.skills must contain skill IDs")
+            for cid in role_definition.get("default_capabilities", []) or []:
+                if not isinstance(cid, str):
+                    errors.append("role_definition.default_capabilities must contain capability IDs")
+
+    skill_catalog = recipe.get("skill_catalog", []) or []
+    if not isinstance(skill_catalog, list):
+        errors.append("skill_catalog must be a list")
+        skill_catalog = []
+    catalog_ids = set()
+    for skill in skill_catalog:
+        if not isinstance(skill, dict):
+            errors.append("each skill_catalog entry must be a mapping")
+            continue
+        sid = skill.get("id")
+        if not sid:
+            errors.append("skill_catalog entry requires id")
+        elif sid in catalog_ids:
+            errors.append(f"duplicate skill catalog id: {sid!r}")
+        else:
+            catalog_ids.add(sid)
+
     skills = recipe.get("skills", []) or []
     if not isinstance(skills, list):
         errors.append("skills must be a list")
