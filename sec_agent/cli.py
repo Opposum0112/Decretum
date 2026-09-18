@@ -73,12 +73,33 @@ def run(recipe: Path, model: str | None = None, dry_run: bool = True) -> None:
 
     session = create_session(
         contract.contract,
-        recipe_dir=recipe.parent.resolve(),
+        workspace=recipe.parent.resolve(),
         model=model,
     )
     session_path = save_session(session, contract.artifact_dir)
     console.print("Codex research completed in the local workspace.")
     console.print(f"Saved: {session_path}")
+
+
+@app.command()
+def analyze(recipe_id: str, question: str, model: str | None = None) -> None:
+    """Continue interactive analysis of accumulated evidence in an existing research session."""
+    root = Path("artifacts") / recipe_id
+    contract_path = root / "research-contract.json"
+    if not contract_path.exists():
+        raise typer.BadParameter(f"No compiled research contract found at {contract_path}")
+    contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    workspace = Path(contract.get("environment", {}).get("sandbox", {}).get("workspace_directory") or ".").resolve()
+    session = create_session(
+        contract,
+        workspace=workspace,
+        model=model,
+        prompt=question,
+        session_db=root / "research-session.sqlite3",
+    )
+    path = save_session(session, root)
+    console.print(getattr(session, "final_output", session))
+    console.print(f"Saved: {path}")
 
 
 @app.command()
