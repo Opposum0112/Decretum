@@ -37,22 +37,85 @@ Evidence-backed report
 
 ---
 
+## What Decretum does
+
+Think of Decretum as a **security-research contract compiler**.
+
+You describe your investigation in YAML. Decretum checks it and turns it into a clear contract for Codex.
+
+```text
+Your question
+     ↓
+Simple YAML recipe
+     ↓
+Decretum validates it
+     ↓
+Decretum compiles a research contract
+     ↓
+Codex investigates interactively
+     ↓
+Evidence → Findings → Report
+```
+
+You do **not** need to define every command or every investigation step.
+
+### The four things to remember
+
+**1. Schema — what is possible**
+
+The LinkML schema defines the security-research vocabulary: roles, skills, capabilities, tools, compute providers, evidence, policy, and references.
+
+**2. Recipe — what this investigation allows**
+
+Your recipe selects the parts you want for one investigation:
+
+```yaml
+role: threat_researcher
+skills:
+  - malware.behavior-analysis
+capabilities:
+  - process.observe
+  - network.capture
+environment:
+  compute:
+    provider: lima
+```
+
+**3. Contract — the boundary**
+
+Decretum validates and compiles the recipe into a `ResearchContract`. The contract records the research objective, capabilities, tools, compute boundary, policy, and required evidence.
+
+**4. Codex — the interactive researcher**
+
+Codex uses the contract to select skills, combine them, choose instrumentation, run permitted experiments, inspect evidence, form hypotheses, and iterate with you.
+
+> **Decretum defines the boundary. Codex explores inside the boundary.**
+
+### Capabilities are tool-independent
+
+You normally describe **what you need**, not a specific tool.
+
+For example, `process.observe` can be implemented with Sysdig, Falco, Tracee, Tetragon, bpftrace, BCC, strace, auditd, or osquery.
+
+`network.capture` can use tcpdump, tshark, dumpcap, Wireshark, Zeek, Suricata, or Snort.
+
+Local compute can use Unix, Docker, Podman, Lima, Incus, LXC, KVM, Firecracker, or QEMU.
+
+Decretum validates the declared boundary; Codex chooses an appropriate declared implementation.
+
 ## What you can do
 
-Use Decretum when you want to investigate something rather than simply run a fixed command.
+Use Decretum for interactive security research such as:
 
-Examples:
-
-- analyze a suspicious file or program
-- investigate process, filesystem, or network behavior
-- perform detection-engineering experiments
-- investigate a software supply-chain artifact
-- compare observations with MITRE ATT&CK or other security frameworks
-- correlate findings with threat-intelligence reports
-- continue asking questions about evidence without restarting the research session
-- ask Codex to propose another experiment when the current evidence is inconclusive
-
----
+- malware and suspicious-file analysis
+- process and system behavior investigation
+- network and DNS research
+- detection-engineering experiments
+- software supply-chain research
+- vulnerability research
+- forensic investigation
+- threat-intelligence correlation
+- security-framework mapping
 
 ## 1. Install
 
