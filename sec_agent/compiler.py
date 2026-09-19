@@ -57,7 +57,7 @@ def compile_recipe(
 ) -> ExecutionContract:
     """Resolve a recipe and produce a portable contract for an external harness runtime."""
     registry_snapshot = snapshot_registry(registry_path, artifact_dir)
-    schema_path = Path(__file__).resolve().parent.parent / "schema" / "sec_research_metamodel.yaml"
+    schema_path = Path(__file__).resolve().parent.parent / "schema" / "sec_research_metamodel.yaml" if recipe.get("domain", "security_research") == "security_research" else None
     resolution = resolve_capabilities(recipe, registry_path)
     steps = _experiment_steps(recipe)
     experiment_graph = {
@@ -147,8 +147,15 @@ def compile_recipe(
         "compilation_manifest": {"artifact": "compilation-manifest.json"},
     }
 
-    if recipe.get("domain", "security_research") == "security_research":\n        body["research"] = {\n            "id": recipe["id"],\n            "name": recipe["name"],\n            "version": recipe["version"],\n            "objective": recipe["objective"],\n        }\n        body["research_loop"] = {\n            "interactive": True,\n            "owner": "external_harness_runtime",\n            "persist_evidence": True,\n            "persist_findings": True,\n            "persist_report": True,\n        }\n\n    source = Path(recipe.get("_source_path", "recipe.yaml"))
-    manifest = create_manifest(source, schema_path, registry_path, artifact_dir) if source.exists() else None
+    if recipe.get("domain", "security_research") == "security_research":
+        body["research"] = {
+            "id": recipe["id"],
+            "name": recipe["name"],
+            "version": recipe["version"],
+            "objective": recipe["objective"],
+        }
+\n    source = Path(recipe.get("_source_path", "recipe.yaml"))
+    manifest = create_manifest(source, schema_path, registry_path, artifact_dir) if source.exists() and schema_path else None
     if manifest:
         body["compilation_manifest"] = {
             "artifact": "compilation-manifest.json",
