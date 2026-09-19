@@ -30,3 +30,9 @@ line-length = 100
 
 [tool.pytest.ini_options]
 addopts = "-q"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.6",
+]
