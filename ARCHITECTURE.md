@@ -1,8 +1,8 @@
-# Architecture Freeze
+# Architecture
 
 This document records the architectural boundary that future changes must preserve.
 
-## Frozen rule
+## Architecture rule
 
 > **Decretum is a domain-neutral declarative execution compiler/resolver, not a runtime.**
 
@@ -156,4 +156,10 @@ Harness/runtime projects should implement:
 - reporting
 - persistent state
 
-**This boundary is intentionally frozen.**
+> **This architecture is intentionally stable: changes should extend the compiler through schemas, registries and domain packs rather than turn it into a runtime.**
+
+## Architecture picture
+
+![Decretum architecture](docs/assets/decretum-architecture.svg)
+
+The diagram shows the intended boundary: Decretum compiles intent into a deterministic contract; the external agent or harness owns reasoning and execution, while persistent state remains external.
