@@ -233,6 +233,9 @@ classes:
       requires_approval: {range: boolean, ifabsent: false}
       tools: {range: string, multivalued: true}
       evidence_outputs: {range: string, multivalued: true}
+      allowed_isolations: {range: string, multivalued: true}
+      allowed_networks: {range: string, multivalued: true}
+      allowed_execution_modes: {range: string, multivalued: true}
 
   SkillSpec:
     attributes:
