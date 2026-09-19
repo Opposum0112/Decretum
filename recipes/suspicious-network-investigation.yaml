@@ -34,17 +34,6 @@ experiments:
     capabilities: [artifact.collect]
     depends_on: [capture-network]
 
-environment:
-  type: local
-  sandbox:
-    backend: lima
-    workspace_directory: .
-    inherit_host_environment: false
-  network:
-    mode: isolated
-  privileged: false
-  programmatic_tool_calling: true
-
 policy:
   allow:
     - artifact.read
