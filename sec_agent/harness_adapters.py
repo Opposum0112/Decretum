@@ -17,7 +17,7 @@ class RegistryHarnessAdapter(HarnessAdapter):
         self.id = harness_id
 
     def supports(self, contract: dict[str, Any]) -> bool:
-        if contract.get("kind") != "ResearchExecutionContract":
+        if contract.get("kind") not in {"ExecutionContract", "ResearchExecutionContract"}:
             return False
         if contract.get("handoff", {}).get("target") != "external_harness_runtime":
             return False
@@ -29,7 +29,7 @@ class RegistryHarnessAdapter(HarnessAdapter):
             raise ValueError(f"contract is not ready for external harness {self.id!r}")
         return {
             "protocol": "decretum.dev/v1",
-            "type": "research_execution_handoff",
+            "type": "execution_handoff",
             "adapter": self.id,
             "contract_id": contract["contract_id"],
             "contract": contract,
