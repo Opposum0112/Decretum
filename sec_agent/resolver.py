@@ -18,6 +18,12 @@ from .validator import (
 
 def _required(recipe: dict[str, Any]) -> set[str]:
     required = {"artifact.read", "artifact.collect"}
+    instrumentation = recipe.get("instrumentation") or {}
+    compute = recipe.get("compute") or {}
+    if isinstance(instrumentation, dict):
+        required.update(instrumentation.get("required", []) or [])
+    if isinstance(compute, dict):
+        required.update(compute.get("required", []) or [])
     for cap in recipe.get("capability_catalog", []) or []:
         if isinstance(cap, dict) and cap.get("id"):
             required.add(cap["id"])
@@ -34,10 +40,10 @@ def _required(recipe: dict[str, Any]) -> set[str]:
     return required
 
 
-def _candidate_rank(candidate: dict[str, Any]) -> tuple[int, int, str]:
-    """Prefer ready local/tool paths, then ready API/MCP paths, deterministically."""
+def _candidate_rank(candidate: dict[str, Any]) -> tuple[int, int, int, str]:
+    """Prefer preferred providers, then ready local/tool paths, deterministically."""
     interface_rank = {"tool": 0, "api": 1, "mcp": 2}.get(candidate.get("interface"), 9)
-    return (0 if candidate.get("ready") else 1, interface_rank, candidate["provider"])
+    return (0 if candidate.get("preferred") else 1, 0 if candidate.get("ready") else 1, interface_rank, candidate["provider"])
 
 
 def resolve_capabilities(
@@ -67,6 +73,13 @@ def resolve_capabilities(
     harness_candidates = (
         [requested_harness] if requested_harness in harnesses else sorted(harnesses)
     )
+    instrumentation = recipe.get("instrumentation") or {}
+    compute = recipe.get("compute") or {}
+    preferred_providers = set()
+    if isinstance(instrumentation, dict):
+        preferred_providers.update(instrumentation.get("preferred", []) or [])
+    if isinstance(compute, dict):
+        preferred_providers.update(compute.get("preferred", []) or [])
     specs = {
         item["id"]: item
         for item in (recipe.get("capability_catalog", []) or [])
@@ -95,6 +108,7 @@ def resolve_capabilities(
             candidate = {
                 "provider": pid,
                 "interface": interface_type,
+                "preferred": pid in preferred_providers,
                 "ready": provider_ready and bool(supported) and surface_ready and compat["compatible"],
                 "provider_ready": provider_ready,
                 "harnesses": supported,
@@ -137,6 +151,10 @@ def resolve_capabilities(
             for s in steps if s["failures"]
         ],
         "harnesses": harness_candidates,
+        "provider_preferences": {
+            "instrumentation": (instrumentation.get("preferred", []) or []) if isinstance(instrumentation, dict) else [],
+            "compute": (compute.get("preferred", []) or []) if isinstance(compute, dict) else [],
+        },
         "integrations": sorted(integrations),
         "models": sorted(models),
         "readiness": readiness,
