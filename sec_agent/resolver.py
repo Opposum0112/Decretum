@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 import shutil
 
-from .discovery import discover_runtime
+from .readiness import assess_readiness
 from .validator import (
     DEFAULT_PROVIDER_REGISTRY,
     load_provider_registry,
@@ -50,7 +50,7 @@ def resolve_capabilities(
         return {"status": "invalid_registry", "errors": errors, "capabilities": []}
 
     registry = load_provider_registry(str(registry_path))
-    runtime = discover_runtime(registry)
+    readiness = assess_readiness(registry)
     providers = registry.get("providers", {}) or {}
     integrations = registry.get("integrations", {}) or {}
     harnesses = registry.get("harnesses", {}) or {}
@@ -101,5 +101,5 @@ def resolve_capabilities(
         "harnesses": harness_candidates,
         "integrations": sorted(integrations),
         "models": sorted(models),
-        "discovery": runtime,
+        "readiness": readiness,
     }
