@@ -32,8 +32,8 @@ def test_compiled_contract_is_harness_handoff_only():
     assert contract.contract["handoff"]["target"] == "external_harness_runtime"
     assert contract.contract["handoff"]["mode"] == "contract_only"
     assert contract.contract["handoff"]["decretum_stops_after_compilation"] is True
-    assert "researcher_interaction" in contract.contract["handoff"]["runtime_owns"]
-    assert "research_store_persistence" in contract.contract["handoff"]["runtime_owns"]
+    assert "interaction" in contract.contract["handoff"]["runtime_owns"]
+    assert "result_persistence" in contract.contract["handoff"]["runtime_owns"]
     assert "runtime_owns" in contract.contract["handoff"]
     assert contract.contract["execution_loop"]["owner"] == "external_harness_runtime"
 
@@ -111,7 +111,7 @@ def test_contract_has_frozen_external_runtime_boundary():
     assert handoff["target"] == "external_harness_runtime"
     assert handoff["decretum_stops_after_compilation"] is True
     assert "evidence_collection" in handoff["runtime_owns"]
-    assert "report_generation" in handoff["runtime_owns"]
+    assert "result_persistence" in handoff["runtime_owns"]
     assert handoff["new_capability_or_requirement"] == "return_to_decretum_for_resolution_and_recompilation"
 
 
