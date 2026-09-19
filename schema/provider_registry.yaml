@@ -49,21 +49,7 @@ providers:
     architectures: [amd64, arm64]
     supports_snapshot: true
     supports_ephemeral: true
-    provisioning:
-      installable: true
-      executable: limactl
-      installation_policy: approval_required
-      approval_required: true
-    lifecycle:
-      create: create
-      start: start
-      stop: stop
-      destroy: delete
-      snapshot: snapshot
-      collect_before_destroy: true
   docker:
-    kind: container
-    name: Docker
     interface: {type: api, endpoint: local:docker}
     capabilities: [compute.container, compute.snapshot, workspace.execute]
   podman:
