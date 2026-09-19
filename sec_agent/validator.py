@@ -60,6 +60,32 @@ def provider_capability_index(registry: dict[str, Any]) -> dict[str, list[str]]:
             index.setdefault(capability, []).append(provider_id)
     return index
 
+
+def required_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> set[str]:
+    """Return the canonical capability closure used by validation and compilation."""
+    required = {"artifact.read", "artifact.collect"}
+    if (recipe.get("workload") or {}).get("command"):
+        required.add("process.execute")
+    for skill in recipe.get("skills", []) or []:
+        if isinstance(skill, dict):
+            required.update(skill.get("capabilities", []) or [])
+    role = recipe.get("role_definition") or {}
+    if isinstance(role, dict):
+        required.update(role.get("default_capabilities", []) or [])
+    for step in recipe.get("experiments", []) or []:
+        required.update(step.get("capabilities", []) or [])
+        if step.get("capability"):
+            required.add(step["capability"])
+    environment = recipe.get("environment") or {}
+    for key in ("compute", "sandbox"):
+        section = environment.get(key) or {}
+        provider_id = section.get("provider") or section.get("backend")
+        if provider_id:
+            registry = load_provider_registry(str(registry_path))
+            provider = (registry.get("providers", {}) or {}).get(provider_id, {})
+            required.update(provider.get("capabilities", []) or [])
+    return required
+
 def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str]:
     """Fail compilation when a declared/required capability has no provider."""
     try:
@@ -70,8 +96,7 @@ def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = 
     if errors:
         return errors
     index = provider_capability_index(registry)
-    required = {c.get("id") for c in (recipe.get("capability_catalog", recipe.get("capabilities", [])) or [])
-                if isinstance(c, dict) and c.get("id")}
+    required = required_capabilities(recipe, registry_path)
     for skill in recipe.get("skills", []) or []:
         if isinstance(skill, dict):
             required.update(skill.get("capabilities", []) or [])
