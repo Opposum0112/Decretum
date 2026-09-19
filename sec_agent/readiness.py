@@ -6,7 +6,7 @@ import socket
 import urllib.parse
 from typing import Any
 
-from .discovery import discover_runtime
+from .discovery import discover_runtime\nfrom .integration_checks import check_mcp_environment, provider_api_check
 
 
 def _env_ready(model: dict[str, Any]) -> bool:
@@ -88,7 +88,7 @@ def assess_readiness(registry: dict[str, Any]) -> dict[str, Any]:
     runtime = discover_runtime(registry)
     providers = {}
     for provider_id, provider in (registry.get("providers") or {}).items():
-        providers[provider_id] = check_provider_readiness(provider_id, provider, runtime)
+        providers[provider_id] = check_provider_readiness(provider_id, provider, runtime, list((registry.get("integrations") or {}).values()))
 
     models = {
         model_id: check_model_readiness(model)
