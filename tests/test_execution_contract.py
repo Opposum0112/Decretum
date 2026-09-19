@@ -109,3 +109,20 @@ def test_resolution_produces_experiment_plan_and_fallbacks():
 def test_candidate_rank_is_deterministic():
     from sec_agent.resolver import _candidate_rank
     assert _candidate_rank({"provider": "b", "interface": "tool", "ready": True}) < _candidate_rank({"provider": "a", "interface": "api", "ready": True})
+
+
+def test_policy_denies_capability():
+    from sec_agent.policy import policy_for_capability
+    recipe, errors, _ = validate_recipe(RECIPE)
+    assert not errors
+    recipe["policy"]["deny"] = ["network.capture"]
+    policy = policy_for_capability("network.capture", recipe, {"network.capture": {"risk": "observe"}})
+    assert policy["denied"] is True
+
+
+def test_policy_marks_capability_approval_required():
+    from sec_agent.policy import policy_for_capability
+    recipe, errors, _ = validate_recipe(RECIPE)
+    assert not errors
+    policy = policy_for_capability("process.execute", recipe, {"process.execute": {"risk": "execute", "requires_approval": True}})
+    assert policy["approval_required"] is True
