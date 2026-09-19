@@ -31,6 +31,7 @@ enums:
       instrumentation: {}
       analysis: {}
       reporting: {}
+      compute: {}
 
   CapabilityRisk:
     permissible_values:
@@ -64,71 +65,11 @@ enums:
       mcp: {}
       script: {}
       analyst_review: {}
+
   EnvironmentType:
     permissible_values:
       local: {}
-  # Sandbox backends are open-world provider identifiers resolved through provider_registry.yaml.
 
-  InstrumentationTool:
-    permissible_values:
-      sysdig: {}
-      falco: {}
-      tracee: {}
-      tetragon: {}
-      bpftrace: {}
-      bcc: {}
-      libbpf: {}
-      ebpf_exporter: {}
-      strace: {}
-      ltrace: {}
-      perf: {}
-      ftrace: {}
-      auditd: {}
-      auditbeat: {}
-      osquery: {}
-      procmon: {}
-      psutil: {}
-      tcpdump: {}
-      tshark: {}
-      dumpcap: {}
-      wireshark: {}
-      zeek: {}
-      suricata: {}
-      snort: {}
-      netsniff_ng: {}
-      conntrack: {}
-      nftables: {}
-      iptables: {}
-      ethtool: {}
-      ss: {}
-      ip: {}
-      dig: {}
-      resolvectl: {}
-      bpftool: {}
-      pahole: {}
-      opensnoop: {}
-      execsnoop: {}
-      tcpconnect: {}
-      tcplife: {}
-      filetop: {}
-      biolatency: {}
-      runqlat: {}
-      funccount: {}
-      openssl_trace: {}
-      volatility: {}
-      rekall: {}
-      yara: {}
-      clamav: {}
-      ghidra: {}
-      radare2: {}
-      binwalk: {}
-      strings: {}
-      readelf: {}
-      objdump: {}
-      lsof: {}
-      nsenter: {}
-      capsh: {}
-      unshare: {}
   ReferenceType:
     permissible_values:
       security_framework: {}
@@ -192,8 +133,9 @@ classes:
       experiments: {range: ExperimentStep, multivalued: true}
       environment: {range: EnvironmentSpec}
       policy: {range: PolicySpec}
-      instrumentation: {range: InstrumentationSpec}
-      compute: {range: ComputeRequirements}
+      infrastructure_profile: {range: string}
+      instrumentation_profile: {range: string}
+      harness_profile: {range: string}
       evidence: {range: EvidenceSpec}
       completion: {range: CompletionSpec}
       references: {range: ResearchReference, multivalued: true}
@@ -204,6 +146,8 @@ classes:
       experiment_requests: {range: ExperimentRequest, multivalued: true}
       findings: {range: ResearchFinding, multivalued: true}
 
+  # CapabilitySpec is a local recipe declaration only for backwards compatibility.
+  # Canonical capability semantics live in capability_registry.yaml.
   CapabilitySpec:
     attributes:
       id: {range: string, required: true}
@@ -315,7 +259,6 @@ classes:
       approval_required: {range: boolean, ifabsent: true}
       status: {range: string, ifabsent: proposed}
 
-
   ExperimentStep:
     attributes:
       id: {range: string, required: true}
@@ -326,7 +269,8 @@ classes:
       inputs: {range: string, multivalued: true}
       outputs: {range: string, multivalued: true}
       approval_required: {range: boolean, ifabsent: false}
-\n  ExperimentResult:
+
+  ExperimentResult:
     attributes:
       id: {range: string, required: true}
       request_id: {range: string, required: true}
@@ -362,6 +306,8 @@ classes:
       persist_session: {range: boolean, ifabsent: true}
       skip_git_repo_check: {range: boolean, ifabsent: false}
 
+  # Legacy inline compute is retained only as a deprecated schema shape.
+  # New recipes should use infrastructure_profile.
   ComputeSpec:
     attributes:
       provider: {range: string, required: true}
@@ -405,7 +351,7 @@ classes:
     attributes:
       required: {range: string, multivalued: true}
       preferred: {range: string, multivalued: true}
-      tools: {range: InstrumentationTool, multivalued: true}
+      tools: {range: string, multivalued: true}
       trace_flags: {range: string, multivalued: true}
       events: {range: string, multivalued: true}
       probes: {range: string, multivalued: true}
