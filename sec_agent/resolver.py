@@ -4,10 +4,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .readiness import assess_readiness\nfrom .policy import annotate_provider, plan_step
-from .equivalence import annotate_equivalence
+from .capability_discovery import discover_capability_surfaces
 from .compatibility import compatibility
-from .validator import DEFAULT_PROVIDER_REGISTRY, load_provider_registry, provider_capability_index, registry_errors
+from .policy import annotate_provider, plan_step
+from .readiness import assess_readiness
+from .validator import (
+    DEFAULT_PROVIDER_REGISTRY,
+    load_provider_registry,
+    provider_capability_index,
+    registry_errors,
+)
 
 
 def _required(recipe: dict[str, Any]) -> set[str]:
@@ -30,62 +36,27 @@ def _required(recipe: dict[str, Any]) -> set[str]:
 
 def _candidate_rank(candidate: dict[str, Any]) -> tuple[int, int, str]:
     """Prefer ready local/tool paths, then ready API/MCP paths, deterministically."""
-    interface = candidate.get("interface")
-    interface_rank = {"tool": 0, "api": 1, "mcp": 2}.get(interface, 9)
+    interface_rank = {"tool": 0, "api": 1, "mcp": 2}.get(candidate.get("interface"), 9)
     return (0 if candidate.get("ready") else 1, interface_rank, candidate["provider"])
 
 
-def _resolve_step(step: dict[str, Any], capability_map: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    capabilities = list(step.get("capabilities", []) or [])
-    if step.get("capability"):
-        capabilities.append(step["capability"])
-    bindings = []
-    failures = []
-    for capability in sorted(set(capabilities)):
-        item = capability_map.get(capability)
-        if not item:
-            failures.append({"capability": capability, "reason": "not registered"})
-            continue
-        ready = [p for p in item["providers"] if p.get("ready")]
-        if not ready:
-            failures.append({
-                "capability": capability,
-                "reason": "no ready provider",
-                "providers": item["providers"],
-            })
-            continue
-        selected = sorted(ready, key=_candidate_rank)[0]
-        bindings.append({
-            "capability": capability,
-            "provider": selected["provider"],
-            "interface": selected["interface"],
-            "harnesses": selected["harnesses"],
-            "integrations": selected["integrations"],
-            "fallbacks": [
-                {
-                    "provider": p["provider"],
-                    "interface": p["interface"],
-                    "harnesses": p["harnesses"],
-                }
-                for p in sorted(ready, key=_candidate_rank)[1:]
-            ],
-        })
-    return {
-        "id": step["id"],
-        "depends_on": list(step.get("depends_on", []) or []),
-        "bindings": bindings,
-        "failures": failures,
-        "ready": not failures,
-    }
-
-
-def resolve_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> dict[str, Any]:
+def resolve_capabilities(
+    recipe: dict[str, Any],
+    registry_path: Path = DEFAULT_PROVIDER_REGISTRY,
+) -> dict[str, Any]:
+    """Resolve registered capabilities and verify their host execution surfaces."""
     errors = registry_errors(registry_path)
     if errors:
         return {"status": "invalid_registry", "errors": errors, "capabilities": []}
 
     registry = load_provider_registry(str(registry_path))
     readiness = assess_readiness(registry)
+    surface_report = discover_capability_surfaces(registry_path, recipe)
+    surface_index = {
+        (item["capability"], item["provider"], item["interface"]): item
+        for item in surface_report.get("surfaces", [])
+    }
+
     providers = registry.get("providers", {}) or {}
     harnesses = registry.get("harnesses", {}) or {}
     integrations = registry.get("integrations", {}) or {}
@@ -94,44 +65,66 @@ def resolve_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_P
 
     requested_harness = (recipe.get("environment") or {}).get("orchestration", {}).get("executor")
     harness_candidates = (
-        [requested_harness] if requested_harness in harnesses
-        else sorted(harnesses)
+        [requested_harness] if requested_harness in harnesses else sorted(harnesses)
     )
+    specs = {
+        item["id"]: item
+        for item in (recipe.get("capability_catalog", []) or [])
+        if isinstance(item, dict) and item.get("id")
+    }
 
-    specs = _capability_specs(recipe)\n    capabilities = []
-    capability_map = {}
+    capabilities = []
+    capability_map: dict[str, dict[str, Any]] = {}
+
     for cap in sorted(_required(recipe)):
         candidates = []
         for pid in index.get(cap, []):
             provider = providers[pid]
             interface = provider.get("interface", {}) or {}
+            interface_type = interface.get("type")
             readiness_item = readiness["providers"].get(pid, {})
-            ready = bool(readiness_item.get("ready"))
+            provider_ready = bool(readiness_item.get("ready"))
             supported = [
                 h for h in harness_candidates
-                if interface.get("type") in (harnesses.get(h, {}).get("supported_interfaces", []) or [])
+                if interface_type in (harnesses.get(h, {}).get("supported_interfaces", []) or [])
             ]
+            surface = surface_index.get((cap, pid, interface_type))
+            surface_ready = bool(surface and surface.get("ready"))
+            annotated = annotate_provider(provider, cap, recipe, specs)
+            compat = compatibility(provider, cap, specs.get(cap, {}))
             candidate = {
                 "provider": pid,
-                "interface": interface.get("type"),
-                "ready": ready and bool(supported),
-                "provider_ready": ready,
+                "interface": interface_type,
+                "ready": provider_ready and bool(supported) and surface_ready and compat["compatible"],
+                "provider_ready": provider_ready,
                 "harnesses": supported,
                 "integrations": provider.get("integrations", []) or [],
                 "readiness": readiness_item.get("checks", []),
-            })
-        item = {
-            "capability": cap,
-            "status": "ready" if any(p["ready"] for p in candidates) else ("registered" if candidates else "unavailable"),
-            "providers": candidates,
-        }
+                "execution_surface": surface,
+                "execution_surface_ready": surface_ready,
+                "compatibility": compat,
+                "policy_compatible": annotated["policy_compatible"],
+                "policy": annotated["policy"],
+            }
+            candidates.append(candidate)
+
+        status = (
+            "ready"
+            if any(p["ready"] and p["policy_compatible"] for p in candidates)
+            else ("registered" if candidates else "unavailable")
+        )
+        item = {"capability": cap, "status": status, "providers": candidates}
         capabilities.append(item)
         capability_map[cap] = item
 
-    steps = [plan_step(step, capability_map, recipe, specs) for step in recipe.get("experiments", []) or []]
+    steps = [
+        plan_step(step, capability_map, recipe, specs)
+        for step in recipe.get("experiments", []) or []
+    ]
     global_failures = [
-        {"capability": item["capability"], "reason": "no ready provider"}
-        for item in capabilities if item["status"] != "ready"
+        {"capability": item["capability"], "reason": "no ready execution surface"}
+        for item in capabilities
+        if item["status"] != "ready"
     ]
     status = "ready" if not global_failures and all(s["ready"] for s in steps) else "needs_prerequisites"
 
@@ -147,4 +140,5 @@ def resolve_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_P
         "integrations": sorted(integrations),
         "models": sorted(models),
         "readiness": readiness,
+        "execution_surfaces": surface_report,
     }
