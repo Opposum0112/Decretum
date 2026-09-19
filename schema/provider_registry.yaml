@@ -119,7 +119,6 @@ providers:
     interface: {type: tool, executable: suricata}
     capabilities: [network.capture, network.observe, network.detection]
 
-# Integrations are discovery/transport surfaces. They may expose one or more providers.
 integrations:
   pcap-mcp:
     type: mcp
@@ -140,25 +139,31 @@ integrations:
     type: api
     provider: incus
 
-# Harnesses are execution/orchestration adapters, not capability implementations.
+# Harnesses describe the operational adapter boundary.
+# supported_interfaces says which integration transports the adapter can consume.
+# operations says what the adapter can do with a resolved execution surface.
 harnesses:
   codex:
     kind: agent
     supported_interfaces: [mcp, api, tool]
+    operations: [provision, implement_capabilities, execute, orchestrate, collect_evidence, researcher_interaction]
   goose:
     kind: agent
     supported_interfaces: [mcp, api, tool]
+    operations: [provision, implement_capabilities, execute, orchestrate, collect_evidence, researcher_interaction]
   open_code:
     kind: agent
     supported_interfaces: [mcp, api, tool]
+    operations: [provision, implement_capabilities, execute, orchestrate, collect_evidence, researcher_interaction]
   google_adk:
     kind: agent
     supported_interfaces: [mcp, api, tool]
+    operations: [provision, implement_capabilities, execute, orchestrate, collect_evidence, researcher_interaction]
   vercel_ai:
     kind: agent
     supported_interfaces: [mcp, api, tool]
+    operations: [provision, implement_capabilities, execute, orchestrate, collect_evidence, researcher_interaction]
 
-# Models provide reasoning; they do not replace capability providers.
 models:
   openai:
     kind: llm
