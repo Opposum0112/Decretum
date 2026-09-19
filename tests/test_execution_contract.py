@@ -249,3 +249,27 @@ def test_registry_snapshot_tampering_is_detected(tmp_path):
         assert False, "tampering should be detected"
     except ValueError:
         pass
+
+
+def test_recipe_requirements_are_compiled_and_preferences_are_visible():
+    from sec_agent.validator import validate_recipe
+    recipe, errors, _ = validate_recipe(Path("recipes/suspicious-network-investigation.yaml"))
+    assert not errors
+    contract = compile_recipe(recipe, Path("artifacts/test-requirements"))
+    requirements = contract.contract["requirements"]
+    assert requirements["instrumentation"]["required"] == ["network.metadata", "syscall.observe"]
+    assert requirements["instrumentation"]["preferred"] == ["sysdig", "zeek"]
+    assert requirements["compute"]["required"] == ["compute.vm"]
+    assert requirements["compute"]["preferred"] == ["incus", "lima"]
+    assert contract.contract["execution"]["resolution"]["provider_preferences"]["compute"] == ["lima", "incus"]
+
+
+def test_resolver_marks_preferred_providers_without_changing_capability_semantics():
+    from sec_agent.validator import validate_recipe
+    from sec_agent.resolver import resolve_capabilities
+    recipe, errors, _ = validate_recipe(Path("recipes/suspicious-network-investigation.yaml"))
+    assert not errors
+    result = resolve_capabilities(recipe)
+    compute = next(item for item in result["capabilities"] if item["capability"] == "compute.vm")
+    preferred = {p["provider"] for p in compute["providers"] if p["preferred"]}
+    assert {"lima", "incus"}.issubset(preferred)
