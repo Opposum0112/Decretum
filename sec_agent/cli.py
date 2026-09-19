@@ -1,4 +1,4 @@
-"""CLI for the Decretum security research compiler.
+"""CLI for the Decretum declarative execution compiler.
 
 The CLI deliberately stops at validation, discovery, resolution and compilation.
 It never starts an agent/harness runtime or owns research state.
@@ -125,7 +125,7 @@ def resolve(recipe: Path) -> None:
 
 @app.command("compile")
 def compile_contract(recipe: Path, output: Path | None = None) -> None:
-    """Compile a portable ResearchExecutionContract for an external harness runtime."""
+    """Compile a portable ExecutionContract for an external harness runtime."""
     data, errors, _ = validate_recipe(recipe)
     if errors:
         for item in errors:
@@ -146,17 +146,17 @@ def compile_contract(recipe: Path, output: Path | None = None) -> None:
 def handoff(contract: Path) -> None:
     """Validate and print a compiled contract handoff envelope; never execute it."""
     data = json.loads(contract.read_text(encoding="utf-8"))
-    required = {"apiVersion", "kind", "contract_version", "contract_id", "research", "capabilities", "handoff"}
+    required = {"apiVersion", "kind", "contract_version", "contract_id", "capabilities", "handoff"}
     missing = sorted(required - set(data))
     if missing:
         console.print(f"[red]ERROR[/red] contract missing fields: {', '.join(missing)}")
         raise typer.Exit(1)
-    if data["kind"] != "ResearchExecutionContract":
+    if data["kind"] not in {"ExecutionContract", "ResearchExecutionContract"}:
         console.print("[red]ERROR[/red] unsupported contract kind")
         raise typer.Exit(1)
     envelope = {
         "protocol": "decretum.dev/v1",
-        "type": "research_execution_handoff",
+        "type": "execution_handoff",
         "contract": data,
         "execution": "external_harness_runtime",
         "decretum_action": "none_after_handoff",
