@@ -34,7 +34,7 @@ def test_compiled_contract_is_harness_handoff_only():
     assert "researcher_interaction" in contract.contract["handoff"]["runtime_owns"]
     assert "research_store_persistence" in contract.contract["handoff"]["runtime_owns"]
     assert "runtime_owns" in contract.contract["handoff"]
-    assert "provision" not in contract.contract["research_loop"]
+    assert contract.contract["execution_loop"]["owner"] == "external_harness_runtime"
 
 
 def test_noncanonical_capability_is_rejected():
