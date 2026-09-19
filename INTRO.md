@@ -251,3 +251,12 @@ Extend the layer that owns the concern:
 For new capabilities, start with semantics rather than a provider-specific tool name. Discovery may propose candidates, but canonical ontology changes require explicit promotion.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md), [README.md](README.md), and [docs/domain-model.md](docs/domain-model.md).
+
+## Acknowledgements
+
+Decretum is made possible by the open-source community and the many projects, standards and contributors whose work enables interoperable developer and research tooling.
+
+A special acknowledgement goes to the **LinkML community and contributors** for the schema/modeling ecosystem that informs Decretum's structured semantic approach.
+
+For general questions or bug reports, contact **maamtest18@gmail.com**. Do not include credentials, secrets, private data, or undisclosed vulnerabilities in ordinary email.
+
