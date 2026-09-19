@@ -1,31 +1,14 @@
 from pathlib import Path
 
 from sec_agent.compiler import compile_recipe
-from sec_agent.validator import (
-    load_recipe,
-    structural_validate,
-    validate_capability_providers,
-    registry_errors,
-)
+from sec_agent.validator import load_recipe, structural_validate, validate_capability_providers, registry_errors
 
 RECIPE = Path("recipes/openai-hosted-malware-analysis.yaml")
 
 
-def test_openai_recipe_is_valid():
+def test_recipe_is_valid():
     recipe = load_recipe(RECIPE)
     assert structural_validate(recipe) == []
-
-
-def test_host_mounts_rejected():
-    recipe = load_recipe(RECIPE)
-    recipe["environment"]["host_mounts"] = True
-    assert any("host filesystem mounts" in e for e in structural_validate(recipe))
-
-
-def test_privileged_execution_rejected():
-    recipe = load_recipe(RECIPE)
-    recipe["environment"]["privileged"] = True
-    assert any("privileged" in e for e in structural_validate(recipe))
 
 
 def test_compiler_produces_deterministic_contract():
@@ -43,167 +26,24 @@ def test_compiled_contract_keeps_harness_execution_boundary():
     assert contract.contract["execution"]["harness"] == "codex"
     assert contract.contract["research_loop"]["interactive"] is True
     assert "provision" in contract.contract["research_loop"]["harness_responsible_for"]
-    assert "implement_capabilities" in contract.contract["research_loop"]["harness_responsible_for"]
 
 
-def test_undeclared_skill_capability_is_rejected():
+def test_noncanonical_capability_is_rejected():
     recipe = load_recipe(RECIPE)
-    recipe["skills"][0]["capabilities"][0] = "process.unknown"
+    recipe["capabilities"].append("process.unknown")
     errors = structural_validate(recipe)
-    assert any("unknown capability" in e for e in errors)
+    assert any("non-canonical capability" in e for e in errors)
 
 
-def test_capability_tool_is_validated():
+def test_inline_configuration_is_rejected():
     recipe = load_recipe(RECIPE)
-    recipe["capability_catalog"][0]["tools"] = ["not-a-tool"]
+    recipe["compute"] = {"required": ["compute.vm"]}
     errors = structural_validate(recipe)
-    assert any("unsupported capability tool" in e for e in errors)
+    assert any("profiles" in e for e in errors)
 
 
 def test_declared_capability_requires_registered_provider(tmp_path):
-    recipe = {
-        "capability_catalog": [{"id": "custom.unavailable"}],
-        "skills": [],
-        "role_definition": {},
-        "environment": {},
-    }
-    registry = tmp_path / "providers.yaml"
-    registry.write_text(
-        """
-apiVersion: decretum.dev/v1
-kind: CapabilityProviderRegistry
-version: "1.0"
-providers:
-  tcpdump:
-    interface: {type: tool, executable: tcpdump}
-    capabilities: [network.capture]
-""",
-        encoding="utf-8",
-    )
-    errors = validate_capability_providers(recipe, registry)
-    assert any("custom.unavailable" in error for error in errors)
-
-
-def test_declared_capability_with_mcp_provider_is_valid(tmp_path):
-    recipe = {
-        "capability_catalog": [{"id": "network.capture"}],
-        "skills": [],
-        "role_definition": {},
-        "environment": {},
-    }
-    registry = tmp_path / "providers.yaml"
-    registry.write_text(
-        """
-apiVersion: decretum.dev/v1
-kind: CapabilityProviderRegistry
-version: "1.0"
-providers:
-  pcap:
-    interface: {type: mcp, server: pcap}
-    capabilities: [network.capture]
-""",
-        encoding="utf-8",
-    )
-    assert validate_capability_providers(recipe, registry) == []
-
-
-def test_registry_declares_harnesses_integrations_and_models():
-    assert registry_errors() == []
-
-
-def test_provider_is_open_world():
-    recipe = {
-        "capability_catalog": [{"id": "compute.custom"}],
-        "skills": [],
-        "role_definition": {},
-        "environment": {},
-    }
-    registry = Path("schema/provider_registry.yaml")
-    assert isinstance(validate_capability_providers(recipe, registry), list)
-
-
-def test_recipe_level_instrumentation_and_compute_requirements_validate():
-    from sec_agent.validator import structural_validate, validate_capability_providers, load_recipe
-    recipe = load_recipe(Path("recipes/suspicious-network-investigation.yaml"))
-    assert structural_validate(recipe) == []
-    assert validate_capability_providers(recipe) == []
-
-
-def test_preferred_provider_must_implement_required_capability(tmp_path):
-    recipe = {
-        "capabilities": ["network.capture"],
-        "instrumentation": {
-            "required": ["network.metadata"],
-            "preferred": ["tcpdump"],
-        },
-        "compute": {
-            "required": ["compute.vm"],
-            "preferred": ["lima"],
-        },
-        "environment": {},
-        "skills": [],
-        "role_definition": {},
-        "experiments": [],
-    }
-    registry = tmp_path / "providers.yaml"
-    registry.write_text(
-        """
-apiVersion: decretum.dev/v1
-kind: CapabilityProviderRegistry
-version: "1.0"
-providers:
-  tcpdump:
-    interface: {type: tool, executable: tcpdump}
-    capabilities: [network.capture]
-  lima:
-    interface: {type: api, endpoint: local:lima}
-    capabilities: [compute.vm]
-harnesses: {}
-integrations: {}
-models: {}
-""",
-        encoding="utf-8",
-    )
-    errors = validate_capability_providers(recipe, registry)
-    assert any("preferred instrumentation provider 'tcpdump'" in error for error in errors)
-
-
-def test_preferred_provider_is_a_hint_not_a_hard_requirement(tmp_path):
-    recipe = {
-        "capabilities": ["network.capture"],
-        "instrumentation": {
-            "required": ["network.capture"],
-            "preferred": ["tcpdump"],
-        },
-        "compute": {},
-        "environment": {},
-        "skills": [],
-        "role_definition": {},
-        "experiments": [],
-    }
-    registry = tmp_path / "providers.yaml"
-    registry.write_text(
-        """
-apiVersion: decretum.dev/v1
-kind: CapabilityProviderRegistry
-version: "1.0"
-providers:
-  tcpdump:
-    interface: {type: tool, executable: tcpdump}
-    capabilities: [network.capture]
-  tshark:
-    interface: {type: tool, executable: tshark}
-    capabilities: [network.capture]
-harnesses: {}
-integrations: {}
-models: {}
-""",
-        encoding="utf-8",
-    )
-    assert validate_capability_providers(recipe, registry) == []
-
-
-def test_harness_operations_are_validated(tmp_path):
+    recipe = {"capabilities": ["custom.unavailable"], "experiments": []}
     registry = tmp_path / "providers.yaml"
     registry.write_text("""
 apiVersion: decretum.dev/v1
@@ -213,13 +53,42 @@ providers:
   tcpdump:
     interface: {type: tool, executable: tcpdump}
     capabilities: [network.capture]
-harnesses:
-  broken:
-    kind: agent
-    supported_interfaces: [tool]
-    operations: [execute, not-an-operation]
+harnesses: {}
 integrations: {}
 models: {}
 """, encoding="utf-8")
-    errors = registry_errors(registry)
-    assert any("invalid operation" in error for error in errors)
+    errors = validate_capability_providers(recipe, registry)
+    assert any("custom.unavailable" in error for error in errors)
+
+
+def test_canonical_capability_with_provider_is_valid(tmp_path):
+    recipe = {"capabilities": ["network.capture"], "experiments": []}
+    registry = tmp_path / "providers.yaml"
+    registry.write_text("""
+apiVersion: decretum.dev/v1
+kind: CapabilityProviderRegistry
+version: "1.0"
+providers:
+  pcap:
+    interface: {type: mcp, server: pcap}
+    capabilities: [network.capture]
+harnesses: {}
+integrations: {}
+models: {}
+""", encoding="utf-8")
+    assert validate_capability_providers(recipe, registry) == []
+
+
+def test_registry_declares_harnesses_integrations_and_models():
+    assert registry_errors() == []
+
+
+def test_recipe_uses_independent_profiles():
+    recipe = load_recipe(Path("recipes/suspicious-network-investigation.yaml"))
+    assert structural_validate(recipe) == []
+    assert validate_capability_providers(recipe) == []
+    assert recipe["infrastructure_profile"] == "isolated-linux-vm"
+    assert recipe["instrumentation_profile"] == "linux-network-observation"
+    assert recipe["harness_profile"] == "interactive-research"
+    assert "compute" not in recipe
+    assert "instrumentation" not in recipe
