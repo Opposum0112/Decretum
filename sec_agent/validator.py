@@ -129,7 +129,7 @@ def load_recipe(path: Path) -> dict[str, Any]:
 
 def structural_validate(recipe: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    required = {"id", "name", "version", "role", "objective", "environment", "policy", "evidence", "completion"}
+    required = {"id", "name", "version", "role", "objective", "policy", "evidence", "completion"}
     errors.extend(f"missing required field: {key}" for key in sorted(required - recipe.keys()))
     if recipe.get("role") not in ROLE_VALUES:
         errors.append(f"invalid role: {recipe.get('role')!r}")
@@ -160,23 +160,6 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
     if not isinstance(skills, list):
         errors.append("skills must be a list")
         skills = []
-
-    environment = recipe.get("environment")
-    if not isinstance(environment, dict):
-        errors.append("environment must be a mapping")
-        return errors
-    if environment.get("type", "local") != "local":
-        errors.append("environment.type must be local; hosted sandbox execution is not supported")
-    sandbox = environment.get("sandbox")
-    if not isinstance(sandbox, dict):
-        errors.append("environment.sandbox must be a mapping")
-    else:
-        if not isinstance(sandbox.get("backend"), str) or not sandbox.get("backend"):
-            errors.append("environment.sandbox.backend must be a provider identifier")
-        if sandbox.get("inherit_host_environment", False):
-            errors.append("host environment inheritance must remain disabled")
-    if environment.get("privileged", False):
-        errors.append("privileged execution is prohibited by default")
 
     if "compute" in recipe or "instrumentation" in recipe:
         errors.append("inline compute/instrumentation configuration is deprecated; use profiles")
