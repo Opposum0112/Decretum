@@ -84,7 +84,16 @@ def compile_recipe(
 
     body: dict[str, Any] = {
         "apiVersion": "decretum.dev/v1",
-        "kind": "ResearchExecutionContract",
+        "kind": "ExecutionContract",
+        "domain": recipe.get("domain", "security_research"),
+        "intent": {
+            "id": recipe["id"],
+            "name": recipe["name"],
+            "objective": recipe["objective"],
+        },
+        "compatibility": {
+            "legacy_kind": "ResearchExecutionContract",
+        },
         "contract_version": "5",
         "contract_id": "",
         "research": {
