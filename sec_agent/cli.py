@@ -10,6 +10,7 @@ from rich.table import Table
 
 from .compiler import compile_recipe, write_contract
 from .capability_discovery import discover_capability_surfaces, write_candidate_yaml, write_discovery_report
+from .capability_registry import canonical_capabilities, candidate, promote_capability
 from .harness_adapters import get_adapter, available_adapters
 from .openai_runner import create_session, save_session
 from .research_state import append_event, evidence_context, record_execution, record_execution_result, verify_ledger
@@ -43,6 +44,58 @@ def discover_capabilities(
     if candidate_path:
         console.print(f"Candidates requiring review: {candidate_path}")
     console.print("Canonical schema was not modified.")
+
+
+
+
+@capabilities_app.command("list")
+def list_capabilities() -> None:
+    """List researcher-approved canonical capabilities available to recipes."""
+    capabilities = canonical_capabilities()
+    table = Table(title="Canonical capabilities")
+    table.add_column("Capability")
+    table.add_column("Kind")
+    table.add_column("Risk")
+    table.add_column("Description")
+    for cid, spec in sorted(capabilities.items()):
+        table.add_row(cid, str(spec.get("kind", "")), str(spec.get("risk", "")), str(spec.get("description", "")))
+    if capabilities:
+        console.print(table)
+    else:
+        console.print("No promoted capabilities are registered yet.")
+
+
+@capabilities_app.command("approve")
+def approve_capability(
+    capability_id: str = typer.Argument(..., help="Candidate capability id, e.g. cloud.audit.query."),
+    candidate_file: Path = typer.Option(Path("artifacts/capability-discovery/capability-candidates.yaml"), "--candidate"),
+    kind: str = typer.Option(..., "--kind"),
+    risk: str = typer.Option(..., "--risk"),
+    name: str = typer.Option(..., "--name"),
+    description: str = typer.Option(..., "--description"),
+    evidence_output: list[str] = typer.Option([], "--evidence-output"),
+    allowed_isolation: list[str] = typer.Option([], "--allowed-isolation"),
+    allowed_network: list[str] = typer.Option([], "--allowed-network"),
+    allowed_execution_mode: list[str] = typer.Option([], "--allowed-execution-mode"),
+) -> None:
+    """Explicitly promote a reviewed candidate into the canonical recipe vocabulary."""
+    existing_candidate = candidate(candidate_file, capability_id) if candidate_file.exists() else None
+    if existing_candidate is None:
+        console.print(f"[yellow]No discovery candidate found for {capability_id!r}; approving explicitly authored semantics.[/yellow]")
+    spec = {
+        "id": capability_id, "name": name, "kind": kind, "risk": risk, "description": description,
+        "requires_approval": risk in {"execute", "write", "privileged", "network_access"},
+        "evidence_outputs": evidence_output, "allowed_isolations": allowed_isolation,
+        "allowed_networks": allowed_network, "allowed_execution_modes": allowed_execution_mode,
+    }
+    try:
+        promote_capability(spec)
+    except ValueError as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(1)
+    console.print(f"[green]Approved canonical capability:[/green] {capability_id}")
+    console.print("Recipes can now reference this capability without redefining its semantics.")
+    console.print("Provider implementations still require explicit registration in schema/provider_registry.yaml.")
 
 
 @app.command()
