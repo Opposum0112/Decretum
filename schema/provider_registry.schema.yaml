@@ -22,7 +22,7 @@ classes:
     attributes:
       id: {range: string, required: true}
       interface: {range: ProviderInterface, required: true}
-      capabilities: {range: string, multivalued: true, required: true}
+      capabilities: {range: string, multivalued: true, required: true}\n      integrations: {range: string, multivalued: true}
 
   Integration:
     attributes:
@@ -34,7 +34,7 @@ classes:
     attributes:
       id: {range: string, required: true}
       kind: {range: HarnessKind, required: true}
-      supported_interfaces: {range: ProviderInterfaceType, multivalued: true}
+      supported_interfaces: {range: ProviderInterfaceType, multivalued: true}\n      adapter: {range: string}\n      contract_version: {range: string}
 
   Model:
     attributes:
