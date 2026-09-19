@@ -1,6 +1,6 @@
 # Decretum
 
-> **Decretum defines the security-research ontology and boundaries. Codex is the interactive researcher that selects, composes, orchestrates, and executes the declared skills.**
+> **Decretum defines the security-research ontology, resolves implementation capabilities, and compiles portable execution contracts. Existing agent harnesses such as Codex, Goose, ADK, and others can execute those contracts.**
 
 Decretum is a **LinkML-based security-research contract compiler**. It turns a declarative research recipe into a validated contract that Codex can investigate within.
 
@@ -30,7 +30,7 @@ flowchart LR
 | **Evidence** | Records what was observed |
 | **Findings** | Records what the research established |
 
-> **Schema = what is possible · Recipe = what this investigation allows · Contract = frozen boundary · Codex = researcher**
+> **Schema = semantic contract · Registry = implementations · Recipe = experiment composition · Resolver = readiness + compatibility · Contract = portable execution boundary**
 
 ## Quick start
 
@@ -85,7 +85,7 @@ For tool providers, Decretum checks whether the required executable is discovera
 decretum compile recipes/openai-hosted-malware-analysis.yaml
 ```
 
-The compiler produces a machine-readable `research-contract.json` for the research session.
+The compiler produces a machine-readable `research-contract.json` containing capability requirements, an experiment execution graph, and resolved provider/interface/harness bindings.
 
 ### 5. Run the research
 
@@ -93,7 +93,7 @@ The compiler produces a machine-readable `research-contract.json` for the resear
 decretum run recipes/openai-hosted-malware-analysis.yaml --dry-run=false
 ```
 
-Codex investigates interactively within the compiled contract. It can inspect evidence, select and compose declared skills, use permitted instrumentation, form hypotheses, request experiments, and iterate with the researcher.
+The selected agent harness investigates within the compiled contract. It can inspect evidence, select and compose declared skills, use permitted instrumentation, form hypotheses, request experiments, and iterate with the researcher.
 
 ### 6. Continue the same research session
 
@@ -140,7 +140,7 @@ Capability
    +-- Tool / CLI provider
 ```
 
-The validator checks the declared capability catalog, skill and role capability references, and compute requirements against `schema/provider_registry.yaml`. A missing provider is a **compile-time error**, not a runtime warning. The registry also records available **integrations**, **agent harnesses**, and **LLM model families**. The resolver then reports candidate execution paths and local readiness without choosing an implementation permanently.
+The validator checks the declared capability catalog, skill and role capability references, and compute requirements against `schema/provider_registry.yaml`. A missing provider is a **compile-time error**, not a runtime warning. The registry also records available **integrations**, **agent harnesses**, and **LLM model families**. The resolver now resolves capability → provider → interface → compatible harness, while retaining all viable bindings in the contract so a harness adapter can choose an execution path at runtime.
 
 This keeps the boundaries explicit:
 
@@ -192,7 +192,7 @@ Supported local compute vocabulary includes:
 
 `Unix` · `Docker` · `Podman` · `Lima` · `Incus` · `LXC` · `KVM` · `Firecracker` · `QEMU`
 
-## Autonomous research and learning
+## Experiment composition\n\nRecipes can optionally define an execution graph. Each step names capabilities and may declare dependencies, inputs, outputs, objectives, and approval requirements:\n\n```yaml\nexperiments:\n  - id: capture-process\n    capabilities: [process.observe]\n    outputs: [process_activity]\n  - id: capture-network\n    capabilities: [network.capture]\n    depends_on: [capture-process]\n    outputs: [network_activity]\n```\n\nThe compiler normalizes this into `experiment_graph.steps` and `entrypoints`. This is deliberately harness-neutral: ADK, Goose, Codex, Pi, or another execution system can consume the same contract through an adapter.\n\n## Autonomous research and learning
 
 Decretum is the contract and capability boundary; the autonomous agent/harness is the researcher. A researcher can compose validated capabilities into comprehensive recipes and iterate through hypotheses, experiments, evidence, analysis, and findings. Required reports are preserved with the research state.
 
@@ -392,4 +392,4 @@ tests/        Regression tests
 
 ## Project status
 
-The `refactor/openai-api` branch provides declarative research recipes, LinkML validation, deterministic contract compilation, reusable roles/skills/capabilities, local compute and instrumentation vocabulary, Codex research sessions, durable evidence and finding state, hypotheses, experiment requests, and security/threat-intelligence references.
+The project is evolving toward a harness-neutral execution compiler: declarative recipes, registry-driven capability resolution, deterministic execution-contract compilation, reusable roles/skills/capabilities, local compute and instrumentation vocabulary, persistent evidence and finding state, hypotheses, experiment requests, and security/threat-intelligence references.
