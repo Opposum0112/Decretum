@@ -1,6 +1,6 @@
 apiVersion: decretum.dev/v1
 kind: CapabilityProviderRegistry
-version: "1.1"
+version: "1.2"
 
 # Capability is the stable semantic contract.
 # Providers are concrete implementations. Harnesses orchestrate them.
@@ -42,9 +42,41 @@ providers:
     interface: {type: tool, executable: shell}
     capabilities: [process.execute, process.observe]
   lima:
+    kind: vm
+    name: Lima
     interface: {type: api, endpoint: local:lima}
     capabilities: [compute.vm, compute.snapshot, workspace.execute]
+    isolation: vm
+    network: isolated
+    architectures: [amd64, arm64]
+    supports_snapshot: true
+    supports_ephemeral: true
+    provisioning:
+      installable: true
+      executable: limactl
+      installation_policy: approval_required
+      approval_required: true
+    lifecycle:
+      create: create
+      start: start
+      stop: stop
+      destroy: delete
+      snapshot: snapshot
+      collect_before_destroy: true
   docker:
+    kind: container
+    name: Docker
+    provisioning:
+      installable: true
+      executable: docker
+      installation_policy: approval_required
+      approval_required: true
+    lifecycle:
+      create: create
+      start: start
+      stop: stop
+      destroy: rm
+      collect_before_destroy: true
     interface: {type: api, endpoint: local:docker}
     capabilities: [compute.container, compute.snapshot, workspace.execute]
   podman:
