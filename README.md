@@ -1,3 +1,19 @@
+<p align="center">
+  <img src="docs/assets/decretum-logo.svg" alt="Decretum" width="680">
+</p>
+
+<p align="center">
+  <strong>Declarative intent → deterministic execution contract → agent / harness</strong>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="Apache 2.0"></a>
+  <a href="https://github.com/Opposum0112/Decretum/actions/workflows/tests.yml"><img src="https://github.com/Opposum0112/Decretum/actions/workflows/tests.yml/badge.svg?branch=capability-compiler-evolution" alt="Tests"></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-3776AB.svg" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/YAML-schema-CCB6FF.svg" alt="YAML schemas">
+  <img src="https://img.shields.io/badge/LinkML-aligned-6B4FBB.svg" alt="LinkML aligned">
+</p>
+
 # Decretum
 
 > **Decretum turns structured intent into a deterministic execution contract for agents and harnesses.**
@@ -6,7 +22,7 @@ Decretum is a **domain-neutral Declarative Execution Compiler**. It combines sch
 
 Security research is Decretum's reference domain, not its architectural boundary. The same compiler model can describe software engineering, infrastructure automation, data engineering, incident response, scientific experiments, and other reproducible technical work.
 
-## Frozen architecture rule
+## Architecture
 
 > **Decretum is not a runtime. It defines what can be executed and produces a portable execution contract. It does not execute work, manage agent/researcher interaction, collect evidence, maintain findings, or generate reports.**
 
@@ -234,7 +250,7 @@ Policy compatibility
 READY / BLOCKED
 ```
 
-## Frozen boundaries
+## Architecture boundary
 
 Decretum deliberately does **not** become:
 
@@ -260,7 +276,18 @@ Store
   = persistent execution or research memory
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/domain-model.md](docs/domain-model.md) for the detailed boundary.
+See [ARCHITECTURE.md](ARCHITECTURE.md), [docs/execution-contract.md](docs/execution-contract.md), and [docs/domain-model.md](docs/domain-model.md) for the detailed boundary.
+
+## Documentation and project governance
+
+- [Introduction](INTRO.md) — problem, positioning and workflow
+- [Architecture](ARCHITECTURE.md) — system boundary and invariants
+- [Execution Contract](docs/execution-contract.md) — interoperability specification
+- [Domain model](docs/domain-model.md) — core concepts and domain packs
+- [Contributing](CONTRIBUTING.md) — development and extension rules
+- [Security](SECURITY.md) — vulnerability reporting
+- [Changelog](CHANGELOG.md) — release history
+- [License](LICENSE) — Apache 2.0
 
 ## Contribution guide
 
