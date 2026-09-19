@@ -346,3 +346,16 @@ Decretum/
 12. The compiler must remain deterministic for the same inputs and registry state.
 
 > **Define in Decretum. Execute in the harness. Remember in the store.**
+
+## Acknowledgements
+
+Decretum is built on the work of the open-source community and the broader ecosystem of declarative schemas, interoperability tooling and agentic systems.
+
+Special acknowledgement to the **LinkML community and contributors** for the schema and modeling ecosystem that informs Decretum's structured semantic approach.
+
+Thank you to the maintainers, contributors and communities behind the open-source tools, standards and projects that make experimentation and interoperability possible.
+
+## Contact
+
+For general project questions or bug reports, you may contact the maintainer at **maamtest18@gmail.com**. Please do not send passwords, API keys, credentials, private data, or undisclosed security vulnerabilities by email; use the security reporting process for vulnerabilities.
+
