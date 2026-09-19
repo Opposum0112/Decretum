@@ -78,3 +78,18 @@ def test_readiness_report_is_ephemeral():
     assert "providers" in result and "models" in result and "runtime" in result
     assert "tcpdump" in result["providers"]
     assert "openai" in result["models"]
+
+
+def test_mcp_readiness_requires_configured_integration():
+    from sec_agent.readiness import check_provider_readiness
+    provider = {"interface": {"type": "mcp", "server": "pcap"}}
+    result = check_provider_readiness("pcap-mcp", provider, {"tools": {}, "compute": {}}, [])
+    assert result["ready"] is False
+
+
+def test_mcp_stdio_configuration_is_ready():
+    from sec_agent.readiness import check_provider_readiness
+    provider = {"interface": {"type": "mcp", "server": "pcap"}}
+    integration = [{"provider": "pcap-mcp", "transport": "stdio", "command": "pcap-mcp"}]
+    result = check_provider_readiness("pcap-mcp", provider, {"tools": {}, "compute": {}}, integration)
+    assert result["ready"] is True
