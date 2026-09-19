@@ -84,6 +84,7 @@ def plan_step(
         ordered = sorted(
             ready,
             key=lambda p: (
+                0 if p.get("preferred") else 1,
                 p.get("policy", {}).get("risk_rank", 99),
                 {"tool": 0, "api": 1, "mcp": 2}.get(p.get("interface"), 9),
                 p["provider"],
