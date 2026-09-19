@@ -1,7 +1,7 @@
-"""Harness-neutral execution contract adapter interfaces.
+"""Contract handoff interfaces for external harness integrations.
 
-Decretum does not implement agent runtimes. Adapters translate the portable
-ResearchExecutionContract into the native contract expected by a harness.
+These interfaces translate Decretum IR into a handoff envelope. They do not
+execute agents, experiments or research sessions.
 """
 from __future__ import annotations
 
@@ -10,36 +10,37 @@ from typing import Any
 
 
 class HarnessAdapter(ABC):
-    """Minimal contract implemented by an execution-harness integration."""
+    """Minimal handoff adapter implemented by an external-runtime integration."""
 
     id: str
 
     @abstractmethod
     def supports(self, contract: dict[str, Any]) -> bool:
-        """Return whether this adapter can execute the contract."""
+        """Return whether the external runtime can consume the contract."""
 
     @abstractmethod
     def prepare(self, contract: dict[str, Any]) -> dict[str, Any]:
-        """Translate Decretum IR into the harness-native execution request."""
+        """Translate the portable contract into a handoff envelope."""
 
 
 class GenericHarnessAdapter(HarnessAdapter):
-    """Reference adapter useful for integrations and contract testing."""
-
     id = "generic"
 
     def supports(self, contract: dict[str, Any]) -> bool:
-        resolution = contract.get("resolution", {})
-        return bool(resolution.get("bindings"))
+        return (
+            contract.get("kind") == "ResearchExecutionContract"
+            and contract.get("handoff", {}).get("target") == "external_harness_runtime"
+        )
 
     def prepare(self, contract: dict[str, Any]) -> dict[str, Any]:
         if not self.supports(contract):
-            raise ValueError("contract has no compatible resolved execution bindings")
+            raise ValueError("contract is not a valid external-runtime handoff")
         return {
+            "protocol": "decretum.dev/v1",
+            "type": "research_execution_handoff",
+            "adapter": self.id,
             "contract_id": contract["contract_id"],
-            "research": contract["research"],
-            "environment": contract["environment"],
-            "experiment_graph": contract["experiment_graph"],
-            "bindings": contract["resolution"]["bindings"],
-            "policy": contract["policy"],
+            "contract": contract,
+            "execution": "external_harness_runtime",
+            "decretum_action": "none_after_handoff",
         }
