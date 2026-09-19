@@ -18,19 +18,6 @@ from .capability_registry import canonical_capabilities
 
 PROVIDER_INTERFACE_TYPES = {"mcp", "api", "tool"}
 DEFAULT_PROVIDER_REGISTRY = Path(__file__).resolve().parents[1] / "schema" / "provider_registry.yaml"
-COMPUTE_PROVIDER_CAPABILITIES = {
-    "unix": {"compute.local", "workspace.execute"},
-    "local_unix": {"compute.local", "workspace.execute"},
-    "docker": {"compute.container", "workspace.execute", "compute.snapshot"},
-    "podman": {"compute.container", "workspace.execute", "compute.snapshot"},
-    "lima": {"compute.vm", "workspace.execute", "compute.snapshot"},
-    "incus": {"compute.container", "compute.vm", "workspace.execute", "compute.snapshot"},
-    "lxc": {"compute.container", "workspace.execute", "compute.snapshot"},
-    "kvm": {"compute.vm", "workspace.execute", "compute.snapshot"},
-    "firecracker": {"compute.microvm", "workspace.execute", "compute.snapshot"},
-    "qemu": {"compute.vm", "workspace.execute", "compute.snapshot"},
-}
-
 @lru_cache(maxsize=8)
 def load_provider_registry(path: str) -> dict[str, Any]:
     registry = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
@@ -52,18 +39,6 @@ def validate_provider_registry(registry: dict[str, Any]) -> list[str]:
         capabilities = provider.get("capabilities")
         if not isinstance(capabilities, list) or not capabilities:
             errors.append(f"provider {provider_id!r} requires non-empty capabilities")
-        if provider.get("kind") is not None and not isinstance(provider.get("kind"), str):
-            errors.append(f"provider {provider_id!r}.kind must be a string")
-        for field in ("provisioning", "lifecycle"):
-            section = provider.get(field)
-            if section is not None and not isinstance(section, dict):
-                errors.append(f"provider {provider_id!r}.{field} must be a mapping")
-        provisioning = provider.get("provisioning") or {}
-        if provisioning and not isinstance(provisioning.get("installable", False), bool):
-            errors.append(f"provider {provider_id!r}.provisioning.installable must be boolean")
-        lifecycle = provider.get("lifecycle") or {}
-        if lifecycle and not isinstance(lifecycle.get("collect_before_destroy", True), bool):
-            errors.append(f"provider {provider_id!r}.lifecycle.collect_before_destroy must be boolean")
     return errors
 
 def provider_capability_index(registry: dict[str, Any]) -> dict[str, list[str]]:
@@ -76,7 +51,7 @@ def provider_capability_index(registry: dict[str, Any]) -> dict[str, list[str]]:
 
 def required_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> set[str]:
     """Return the canonical capability closure used by validation and compilation."""
-    required = {"artifact.read", "artifact.collect"}
+    required = set(recipe.get("capabilities", []) or [])
     if (recipe.get("workload") or {}).get("command"):
         required.add("process.execute")
     for skill in recipe.get("skills", []) or []:
@@ -120,10 +95,6 @@ def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = 
     if isinstance(environment, dict):
         compute = environment.get("compute") or {}
         sandbox = environment.get("sandbox") or {}
-        if isinstance(compute, dict) and compute.get("provider"):
-            required.update(COMPUTE_PROVIDER_CAPABILITIES.get(compute["provider"], set()))
-        if isinstance(sandbox, dict) and sandbox.get("backend"):
-            required.update(COMPUTE_PROVIDER_CAPABILITIES.get(sandbox["backend"], set()))
     for capability in sorted(required):
         if capability and capability not in index:
             errors.append(f"capability {capability!r} has no registered provider (MCP/API/tool)")
