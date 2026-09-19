@@ -70,8 +70,7 @@ def resolve_capabilities(
     models = registry.get("models", {}) or {}
     index = provider_capability_index(registry)
 
-    orchestration = (recipe.get("environment") or {}).get("orchestration") or {}
-    requested_harness = orchestration.get("executor")
+    requested_harness = None
     preferred_harnesses = harness_profile.get("preferred", []) if isinstance(harness_profile, dict) else []
     if requested_harness in harnesses:
         harness_candidates = [requested_harness]
