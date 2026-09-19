@@ -232,6 +232,70 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
             if tool not in TOOLS: errors.append(f"unsupported instrumentation tool: {tool!r}")
     return errors
 
+def validate_experiment_graph(recipe: dict[str, Any]) -> list[str]:
+    """Validate the optional experiment DAG and its capability references."""
+    errors: list[str] = []
+    steps = recipe.get("experiments", []) or []
+    if not isinstance(steps, list):
+        return ["experiments must be a list"]
+
+    declared = {c.get("id") for c in (recipe.get("capability_catalog", []) or [])
+                if isinstance(c, dict) and c.get("id")}
+    step_ids: set[str] = set()
+    graph: dict[str, list[str]] = {}
+
+    for step in steps:
+        if not isinstance(step, dict):
+            errors.append("each experiment step must be a mapping")
+            continue
+        sid = step.get("id")
+        if not sid:
+            errors.append("experiment.id is required")
+            continue
+        if sid in step_ids:
+            errors.append(f"duplicate experiment id: {sid!r}")
+        step_ids.add(sid)
+        deps = step.get("depends_on", []) or []
+        if not isinstance(deps, list):
+            errors.append(f"experiment {sid!r}: depends_on must be a list")
+            deps = []
+        graph[sid] = deps
+        for dep in deps:
+            if dep == sid:
+                errors.append(f"experiment {sid!r}: cannot depend on itself")
+            elif dep not in step_ids and dep not in {x.get("id") for x in steps if isinstance(x, dict)}:
+                errors.append(f"experiment {sid!r}: unknown dependency {dep!r}")
+        capabilities = step.get("capabilities", []) or []
+        if step.get("capability"):
+            capabilities = list(capabilities) + [step["capability"]]
+        if not isinstance(capabilities, list):
+            errors.append(f"experiment {sid!r}: capabilities must be a list")
+            continue
+        for capability in capabilities:
+            if capability not in declared:
+                errors.append(f"experiment {sid!r}: undeclared capability {capability!r}")
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit(node: str) -> None:
+        if node in visiting:
+            errors.append(f"experiment graph contains a cycle at {node!r}")
+            return
+        if node in visited:
+            return
+        visiting.add(node)
+        for dep in graph.get(node, []):
+            if dep in graph:
+                visit(dep)
+        visiting.remove(node)
+        visited.add(node)
+
+    for node in graph:
+        visit(node)
+    return errors
+
+
 def preflight(recipe: dict[str, Any]) -> list[str]:
     sandbox = recipe.get("environment", {}).get("sandbox", {})
     backend = sandbox.get("backend")
