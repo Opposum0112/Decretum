@@ -1,188 +1,220 @@
 # Decretum
 
-> **Decretum defines what a security researcher needs. The execution ecosystem determines how it is fulfilled.**
+> **Decretum turns structured intent into a deterministic execution contract for agents and harnesses.**
 
-Decretum is a **harness-neutral security research compiler and capability resolver**. It discovers execution surfaces, validates canonical capabilities, resolves providers/integrations/harness compatibility, and compiles a portable **Research Execution Contract**.
+Decretum is a **domain-neutral Declarative Execution Compiler**. It combines schemas, recipes, profiles, provider/integration registries, discovery, validation, policy, and deterministic resolution to produce a portable **Execution Contract**.
 
-## 🚧 Frozen architecture rule
+Security research is Decretum's reference domain, not its architectural boundary. The same compiler model can describe software engineering, infrastructure automation, data engineering, incident response, scientific experiments, and other reproducible technical work.
 
-> **Decretum is not a runtime. Decretum is responsible for determining what can be executed and producing a portable execution contract. It does not execute research, manage researcher interaction, collect evidence, maintain findings, or generate reports.**
+## Frozen architecture rule
 
-After compilation, **Decretum stops**.
+> **Decretum is not a runtime. It defines what can be executed and produces a portable execution contract. It does not execute work, manage agent/researcher interaction, collect evidence, maintain findings, or generate reports.**
 
-The compiled contract is passed to an external harness runtime such as Codex, Goose, OpenCode, Google ADK, Vercel AI, or another compatible runtime.
+After compilation, **Decretum stops**. The contract is passed to an external harness or agent runtime.
 
-The external runtime owns the interactive investigation and writes the resulting evidence, findings, and report to its research/evidence store.
+If execution later needs a new capability or changed requirement, the request returns to Decretum for validation, resolution, and recompilation.
 
-If the investigation needs a **new capability or changed requirement**, the request returns to Decretum for resolution and a new contract.
-
----
-
-# Architecture
+## The model
 
 ```
-                         RESEARCHER
-                             |
-                         Research Recipe
-                             |
-                             v
-                 +-------------------------+
-                 |        DECRETUM         |
-                 |                         |
-                 | Capability Registry     |
-                 | Provider Registry       |
-                 | Profiles                |
-                 | Discovery               |
-                 | Validation              |
-                 | Policy                  |
-                 | Resolver                |
-                 | Compiler                |
-                 +------------+------------+
-                              |
-                              | ResearchExecutionContract
-                              v
-                 +-------------------------+
-                 |    HARNESS RUNTIME      |
-                 |                         |
-                 | Codex / Goose / etc.    |
-                 |                         |
-                 | Researcher interaction  |
-                 | Provisioning             |
-                 | Experiment execution    |
-                 | Evidence collection     |
-                 | Analysis                |
-                 | Findings                |
-                 | Report                  |
-                 +------------+------------+
-                              |
-                              v
-                 +-------------------------+
-                 | RESEARCH / EVIDENCE     |
-                 | STORE                   |
-                 |                         |
-                 | Sessions                |
-                 | Experiments             |
-                 | Evidence                |
-                 | Findings                |
-                 | Hypotheses              |
-                 | Reports                 |
-                 | Provenance              |
-                 +-------------------------+
+Schema       = what exists / semantic boundaries
+Recipe       = what should be done
+Profile      = execution characteristics and preferences
+Registry     = available implementations
+Resolver     = deterministic capability binding
+Compiler     = portable contract generation
+Harness      = actual execution and interaction
+Store        = persistent execution/research memory
 ```
 
-### The boundary
-
-| Component | Owns |
-|---|---|
-| **Decretum** | What is required, what is available, resolution, policy, compilation |
-| **Execution contract** | Portable handoff between Decretum and a runtime |
-| **Harness runtime** | How research is executed and how the researcher interacts |
-| **Research/evidence store** | Persistent investigation state and artifacts |
-
-### Core vocabulary
+The important separation is:
 
 ```
-Capability    = what is needed
-Profile       = execution characteristics/preferences
-Provider      = implementation
-Integration   = access surface
-Harness       = runtime that executes/orchestrates the contract
-Contract      = compiled handoff
-Evidence      = observed research artifacts
-Finding       = evidence-backed conclusion
+                    DECRETUM
+          Declarative Execution Compiler
+                       |
+       +---------------+---------------+
+       |               |               |
+    Schema           Recipe          Profile
+   "what"           "do"            "how"
+       |               |               |
+       +---------------+---------------+
+                       |
+                    Resolver
+                       |
+     capability + provider + integration
+       + harness + readiness + policy
+                       |
+                       v
+               Execution Contract
+                       |
+                       v
+              External Harness/Agent
+                       |
+          +------------+------------+
+          |            |            |
+       execute      interact      persist
+          |            |            |
+          +------------+------------+
+                       |
+                    Store
 ```
 
----
+## Domain packs
 
-# Research workflow
+The compiler core is domain-neutral. Domain-specific semantics live in registries and schemas rather than compiler branches.
 
-A researcher should experience Decretum as a **research compiler**, not as another agent framework.
+Examples:
+
+- **Security research** — malware, network, forensics, detection and cloud investigation
+- **Software engineering** — source changes, dependencies, tests, builds and containers
+- **Infrastructure** — VM, container, network and deployment requirements
+- **Data engineering** — datasets, transforms, validation and artifacts
+- **Scientific/technical experiments** — instruments, observations, analysis and evidence
+
+A domain pack contributes capabilities, schemas, recipes, profiles and provider metadata. It does not change the core resolver/compiler semantics.
+
+## Why structured contracts instead of broad markdown specifications?
+
+Markdown is excellent for explanation. It is not a deterministic execution interface.
+
+Decretum separates:
 
 ```
-1. Define research objective
-          |
-2. Compose canonical capabilities
-          |
-3. Select infrastructure / instrumentation / harness profiles
-          |
-4. Validate recipe
-          |
-5. Discover available execution surfaces
-          |
-6. Resolve capability -> provider -> integration -> harness
-          |
-7. Review resolution
-          |
-8. Compile ResearchExecutionContract
-          |
-9. Pass contract to external harness runtime
-          |
-          +-------------------------------+
-          |                               |
-          v                               |
-10. Harness conducts interactive          |
-    investigation                         |
-          |                               |
-          +--> experiment                 |
-          +--> collect evidence           |
-          +--> analyze                    |
-          +--> finding                    |
-          +--> researcher interaction     |
-          +--> report                     |
-          |                               |
-11. Persist evidence/findings/report <----+
-          |
-12. Need a new capability?
-          |
-          +--> return to Decretum
-               resolve + compile again
+human intent
+    |
+    v
+structured schema + recipe + profile
+    |
+    v
+validated resolution
+    |
+    v
+portable execution contract
+    |
+    v
+agent / harness execution
 ```
 
-**Decretum does not perform steps 9–11.**
+This gives agents a machine-readable boundary while keeping implementation choices outside the recipe.
 
----
+## Example: software engineering
 
-# Quick start
+A software task can use the same compiler:
+
+```yaml
+apiVersion: decretum.dev/v1
+kind: ExecutionRecipe
+domain: software_engineering
+id: build-user-service
+name: Build User Service
+version: "1.0"
+objective: Build and validate a Python service.
+
+capabilities:
+  - source.read
+  - source.modify
+  - dependency.install
+  - test.execute
+  - artifact.build
+  - container.build
+
+profiles:
+  infrastructure: local-dev
+  language: python
+  testing: pytest
+  container: docker
+  agent: coding-agent
+
+completion:
+  required:
+    - tests_pass
+    - artifact_built
+    - container_built
+```
+
+The same intent can be compiled against another preference set:
+
+```yaml
+profiles:
+  infrastructure: isolated-dev-vm
+  testing: pytest
+  container: podman
+  agent: enterprise-coding-agent
+```
+
+The recipe describes **intent**. The profile expresses **preferences**. The provider registry determines **what is actually available**.
+
+## Security research reference example
+
+```yaml
+id: suspicious-network-investigation
+name: Suspicious Network Investigation
+version: "1.0"
+role: threat_researcher
+objective: Determine whether the sample creates unexpected network activity.
+
+capabilities:
+  - process.observe
+  - network.capture
+  - artifact.collect
+
+infrastructure_profile: isolated-linux-vm
+instrumentation_profile: linux-network-observation
+harness_profile: interactive-research
+```
+
+The recipe does not contain Lima/Docker lifecycle, MCP implementation, agent prompts, or runtime-specific code.
+
+## End-to-end workflow
+
+1. Define structured intent.
+2. Reference canonical capabilities.
+3. Select profiles/preferences.
+4. Validate the recipe.
+5. Discover available execution surfaces.
+6. Resolve capability → provider → integration → harness.
+7. Check readiness and policy.
+8. Compile the Execution Contract.
+9. Hand the contract to the external harness.
+10. The harness executes, interacts, and persists its state.
+11. If requirements change, return to Decretum and compile a new contract.
+
+**Decretum does not perform steps 9–10.**
+
+### Capability evolution
+
+```
+DISCOVER
+   |
+PROPOSE
+   |
+SEMANTIC REVIEW
+   |
+APPROVE
+   |
+CANONICAL CAPABILITY
+   |
+PROVIDER IMPLEMENTATIONS
+```
+
+Discovery can propose a capability, but it cannot silently mutate canonical semantics.
+
+## Quick start
 
 ```bash
 git clone https://github.com/Opposum0112/Decretum.git
 cd Decretum
 uv sync
-```
-
-## Discover
-
-```bash
 decretum capabilities discover
-```
-
-Discovery checks registered tools, APIs, MCP surfaces, integrations, compute providers, and harness availability.
-
-It can produce:
-
-```
-artifacts/capability-discovery/
-├── capability-surface-manifest.json
-└── capability-candidates.yaml
-```
-
-Discovery **never silently modifies canonical capability semantics**.
-
-## Validate
-
-```bash
 decretum validate recipes/<recipe>.yaml
-```
-
-Nothing is executed.
-
-## Resolve
-
-```bash
 decretum resolve recipes/<recipe>.yaml
+decretum compile recipes/<recipe>.yaml
 ```
 
-Resolution validates the complete path:
+Nothing in Decretum's validate/resolve/compile path executes the work.
+
+## Resolution chain
 
 ```
 Capability
@@ -202,298 +234,13 @@ Policy compatibility
 READY / BLOCKED
 ```
 
-## Compile
+## Frozen boundaries
 
-```bash
-decretum compile recipes/<recipe>.yaml
-```
+Decretum deliberately does **not** become:
 
-Output:
-
-```
-artifacts/<research-id>/
-├── research-contract.json
-├── provider-registry.snapshot.json
-└── compilation-manifest.json
-```
-
-## Inspect the handoff
-
-```bash
-decretum handoff artifacts/<research-id>/research-contract.json
-```
-
-This prints the portable handoff envelope. **It does not execute anything.**
-
----
-
-# Example recipe
-
-Keep recipes semantic and small:
-
-```yaml
-id: suspicious-network-investigation
-name: Suspicious Network Investigation
-version: "1.0"
-
-objective: >
-  Determine whether the sample creates unexpected network activity.
-
-capabilities:
-  - process.observe
-  - network.capture
-  - artifact.collect
-
-infrastructure_profile: isolated-linux-vm
-instrumentation_profile: linux-network-observation
-harness_profile: interactive-research
-
-experiments:
-  - id: observe-process
-    objective: Observe process execution.
-    capabilities: [process.observe]
-
-  - id: capture-network
-    objective: Capture network activity.
-    capabilities: [network.capture]
-    depends_on: [observe-process]
-
-  - id: preserve-results
-    objective: Preserve research evidence.
-    capabilities: [artifact.collect]
-    depends_on: [capture-network]
-```
-
-The recipe does **not** contain Lima/Docker lifecycle, installation commands, MCP implementation, agent prompts, or runtime-specific execution code.
-
----
-
-# What the compiled contract means
-
-The contract is the boundary between Decretum and the execution ecosystem.
-
-Conceptually:
-
-```json
-{
-  "kind": "ResearchExecutionContract",
-  "contract_version": "5",
-
-  "capabilities": [
-    "process.observe",
-    "network.capture",
-    "artifact.collect"
-  ],
-
-  "execution": {
-    "harness": "codex",
-    "resolution": "..."
-  },
-
-  "handoff": {
-    "target": "external_harness_runtime",
-    "mode": "contract_only",
-    "decretum_stops_after_compilation": true
-  }
-}
-```
-
-The runtime may consume the contract in its own native format, but it must preserve the contract's semantic requirements and policy.
-
----
-
-# Interactive investigation belongs to the harness
-
-The external harness runtime can conduct a loop such as:
-
-```
-Compiled Contract
-      |
-      v
-Harness Runtime
-      |
-      +--> Researcher asks question
-      |
-      +--> Form hypothesis
-      |
-      +--> Run experiment
-      |
-      +--> Collect evidence
-      |
-      +--> Analyze evidence
-      |
-      +--> Record finding
-      |
-      +--> Generate report
-      |
-      +--> Ask researcher for next direction
-      |
-      +--> Request another experiment
-                 |
-                 v
-          New capability?
-             /      \
-           no       yes
-           |         |
-       continue   return to
-                  Decretum
-```
-
-A runtime can therefore remain stateful and interactive without making Decretum stateful.
-
----
-
-# Evidence, findings and research knowledge
-
-The research/evidence store belongs to the **harness/runtime ecosystem**.
-
-A runtime may persist:
-
-```
-research/
-├── sessions/
-├── experiments/
-├── hypotheses/
-├── evidence/
-├── findings/
-├── reports/
-├── interactions/
-└── provenance/
-```
-
-Evidence should retain provenance such as:
-
-```json
-{
-  "id": "ev-001",
-  "kind": "network.pcap",
-  "experiment_id": "capture-network",
-  "sha256": "...",
-  "provider": "tcpdump"
-}
-```
-
-Findings should reference the evidence that supports them:
-
-```json
-{
-  "id": "finding-001",
-  "statement": "Observed external DNS communication.",
-  "status": "supported",
-  "evidence_ids": ["ev-001"],
-  "confidence": "high"
-}
-```
-
-This lets the runtime build a persistent research knowledge graph without turning Decretum into a database or investigation engine.
-
----
-
-# Capability lifecycle
-
-New capabilities follow an explicit promotion path:
-
-```
-DISCOVER
-   |
-PROPOSE
-   |
-SEMANTIC REVIEW
-   |
-RESEARCHER APPROVAL
-   |
-CANONICAL CAPABILITY
-   |
-PROVIDER IMPLEMENTATIONS
-```
-
-Discovery can report:
-
-```yaml
-capability: cloud.audit.query
-status: review_required
-source:
-  provider: example-provider
-```
-
-It must **not** silently add the capability to the canonical registry.
-
-After review:
-
-```bash
-decretum capabilities approve cloud.audit.query \
-  --kind cloud \
-  --risk read \
-  --name "Query Cloud Audit Logs" \
-  --description "Query cloud audit records for security investigation."
-```
-
-Providers can then implement the canonical capability.
-
----
-
-# Adding a provider
-
-Provider metadata describes implementation and access:
-
-```yaml
-providers:
-  tshark:
-    interface:
-      type: tool
-      executable: tshark
-    capabilities:
-      - network.capture
-
-  pcap-mcp:
-    interface:
-      type: mcp
-      server: pcap
-    capabilities:
-      - network.capture
-
-  lima:
-    interface:
-      type: api
-      endpoint: local:lima
-    capabilities:
-      - compute.vm
-      - compute.snapshot
-```
-
-Provider metadata does **not** redefine capability semantics.
-
-A new provider should normally be registry work, not compiler branching.
-
----
-
-# Profiles
-
-Profiles separate execution preferences from semantic capabilities.
-
-```yaml
-infrastructure_profile: isolated-linux-vm
-instrumentation_profile: linux-network-observation
-harness_profile: interactive-research
-```
-
-Examples:
-
-- Infrastructure: Lima / Incus / QEMU, VM size, OS, isolation
-- Instrumentation: Sysdig / Zeek / tcpdump
-- Harness: Codex / Goose / OpenCode / ADK / Vercel AI
-
-The same research recipe can therefore be compiled against different execution environments without changing its research semantics.
-
----
-
-# Why the runtime boundary matters
-
-This architecture deliberately avoids making Decretum:
-
-- an agent framework
+- an agent runtime
 - a workflow engine
-- a VM/container orchestrator
+- a VM/container runtime
 - an evidence database
 - a finding engine
 - a report generator
@@ -504,224 +251,71 @@ Instead:
 
 ```
 Decretum
-  = research intent compiler
+  = declarative intent -> deterministic contract
 
-Harness
-  = interactive research execution environment
+Harness / Agent
+  = interactive execution environment
 
-Research Store
-  = persistent research memory
+Store
+  = persistent execution or research memory
 ```
 
-This makes the system composable with existing and future agent runtimes.
+See [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/domain-model.md](docs/domain-model.md) for the detailed boundary.
 
----
+## Contribution guide
 
-# Contribution guide
+Contribute at the layer that owns the semantics:
 
-Community contributions should follow the capability boundary.
+- **Domain schema/capability** → stable meaning
+- **Provider** → concrete implementation
+- **Integration** → access surface
+- **Profile** → reusable preference/constraint
+- **Discovery** → availability evidence
+- **Resolver/compiler** → generic binding and contract generation
+- **Harness/runtime** → execution and interaction
+- **Store** → persistent evidence, artifacts, findings or reports
 
-## 1. Add a research capability
+Adding a provider should normally require registry work, not compiler branching.
 
-Start with the research question:
+For a new capability, explain its semantics and distinguish it from existing capabilities before requesting canonical approval.
 
-> What security-research capability is actually missing?
-
-Then define stable semantics.
-
-Do not start by adding a provider-specific name.
-
-## 2. Propose the capability
-
-Use discovery evidence or a capability proposal.
-
-Explain:
-
-- what the capability means
-- why it is distinct from existing capabilities
-- required risk level
-- expected evidence outputs
-- isolation/network requirements
-- execution constraints
-
-## 3. Get canonical approval
-
-A capability becomes canonical only after explicit review.
-
-This prevents every new tool from expanding the ontology.
-
-## 4. Add an implementation
-
-Add provider metadata describing how the canonical capability is implemented.
-
-Examples:
-
-```
-network.capture
-  ├── tcpdump
-  ├── tshark
-  └── pcap-mcp
-```
-
-No compiler branch should be necessary.
-
-## 5. Add or update integration metadata
-
-Describe the access surface:
-
-```
-tool
-MCP
-API
-local executable
-```
-
-## 6. Add discovery/readiness checks
-
-A provider should only be considered usable when its execution surface is actually available.
-
-## 7. Add tests
-
-Contributors should test:
-
-- schema semantics
-- provider registration
-- discovery
-- readiness
-- capability resolution
-- policy compatibility
-- deterministic contract compilation
-- contract handoff boundary
-
-## 8. Keep runtime-specific work outside Decretum
-
-If your contribution implements:
-
-- Codex execution
-- Goose execution
-- OpenCode execution
-- researcher UI
-- experiment orchestration
-- evidence database
-- finding analysis
-- report generation
-
-it belongs in a harness/runtime or research-store project, not in the Decretum compiler core.
-
----
-
-# Community contribution path
-
-```
-Researcher
-   |
-   v
-Research need
-   |
-   v
-Capability proposal
-   |
-   v
-Semantic review
-   |
-   v
-Canonical capability
-   |
-   +-------------------+
-   |                   |
-   v                   v
-Provider             Profile
-implementation       preference
-   |                   |
-   +---------+---------+
-             |
-             v
-        Discovery
-             |
-             v
-          Resolver
-             |
-             v
-          Compiler
-             |
-             v
-      Execution Contract
-             |
-             v
-     External Harness
-```
-
-The community can therefore extend Decretum at several independent layers without coupling everything to one agent runtime.
-
----
-
-# Project structure
+## Project structure
 
 ```
 Decretum/
 ├── schema/
-│   ├── sec_research_metamodel.yaml
 │   ├── capability_registry.yaml
 │   ├── provider_registry.yaml
 │   ├── profile_registry.yaml
-│   └── provider_registry.schema.yaml
+│   └── sec_research_metamodel.yaml   # reference security domain
 ├── recipes/
+├── docs/
+│   └── domain-model.md
 ├── sec_agent/
 │   ├── capability_registry.py
 │   ├── capability_discovery.py
 │   ├── profile_registry.py
 │   ├── resolver.py
-│   ├── compatibility.py
 │   ├── policy.py
 │   ├── compiler.py
-│   ├── manifest.py
-│   ├── registry_snapshot.py
+│   ├── harness.py
 │   └── replay.py
 └── tests/
 ```
 
----
+## Architectural invariants
 
-# Frozen architectural invariants
+1. Decretum is a compiler/resolver, not a runtime.
+2. Decretum stops after producing the execution contract.
+3. The execution contract is the interoperability boundary.
+4. Harnesses/agents own execution and interaction.
+5. Persistent stores live outside Decretum.
+6. New capability requirements return to Decretum for resolution and recompilation.
+7. Canonical capability semantics are provider- and harness-independent.
+8. Provider additions must not require compiler branching.
+9. Discovery cannot silently mutate the canonical ontology.
+10. Domain-specific behavior belongs in domain packs, not core compiler logic.
+11. Replay/verification is read-only.
+12. The compiler must remain deterministic for the same inputs and registry state.
 
-These rules are intentionally frozen:
-
-1. **Decretum is a compiler/resolver, not a runtime.**
-2. **Decretum stops after producing the execution contract.**
-3. **Harness runtimes own interactive researcher investigation.**
-4. **Harness runtimes own provisioning, execution and orchestration.**
-5. **Research/evidence stores live outside Decretum.**
-6. **Findings and reports are produced and persisted by the runtime ecosystem.**
-7. **New capability requirements return to Decretum for resolution and recompilation.**
-8. **Canonical capability semantics are independent of providers and harnesses.**
-9. **Provider additions must not require compiler branching.**
-10. **The execution contract is the stable interoperability boundary.**
-11. **Discovery can propose capabilities but cannot silently mutate the canonical ontology.**
-12. **Replay/verification in Decretum is read-only and never executes research.**
-
-> **Define in Decretum. Investigate in the harness. Remember in the research store.**
-
----
-
-# Status
-
-Decretum is intentionally focused on one job:
-
-```
-Research Intent
-      +
-Canonical Capabilities
-      +
-Discoverable Execution Surfaces
-      +
-Resolution
-      +
-Policy
-      |
-      v
-Portable Research Execution Contract
-```
-
-The execution ecosystem then takes over.
-
-That separation is the foundation for a community-extensible, harness-neutral security research ecosystem.
+> **Define in Decretum. Execute in the harness. Remember in the store.**
