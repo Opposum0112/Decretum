@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Decretum — a declarative security-research contract and capability platform.">
-<title>Decretum — Security Research, Declaratively</title>
+<meta name="description" content="Decretum — a domain-neutral declarative execution compiler for agents and harnesses.">
+<title>Decretum — Declarative Execution for Agents</title>
 <style>
 :root{--bg:#070a0f;--panel:#0d121a;--panel2:#111925;--text:#edf2f7;--muted:#98a6b8;--line:#202b3a;--accent:#73e0b5;--accent2:#7aa7ff;--max:1120px}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 15% 0%,#14251f 0,transparent 35%),radial-gradient(circle at 90% 10%,#15213b 0,transparent 32%),var(--bg);color:var(--text);font:16px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -21,23 +21,23 @@ pre{overflow:auto;background:#05080c;border:1px solid var(--line);border-radius:
 <header class="wrap nav"><a class="brand" href="#top">DECRET<span>UM</span></a><nav class="links"><a href="#model">Model</a><a href="#workflow">Workflow</a><a href="#capabilities">Capabilities</a><a href="https://github.com/Opposum0112/Decretum">GitHub ↗</a></nav></header>
 <main id="top">
 <section class="wrap hero">
-<div class="eyebrow"><span class="dot"></span> DECLARATIVE SECURITY RESEARCH</div>
-<h1>Research with a <em>contract.</em><br>Explore with an agent.</h1>
-<p class="lead">Decretum defines the ontology, capabilities and boundaries of a security investigation. An autonomous researcher can then compose validated skills, run authorized experiments, preserve evidence and continue the investigation from durable state.</p>
+<div class="eyebrow"><span class="dot"></span> DECLARATIVE EXECUTION COMPILER</div>
+<h1>Intent in.<br><em>Contract out.</em></h1>
+<p class="lead">Decretum bridges structured specifications and agentic execution. It resolves capabilities, providers, integrations, prerequisites and harness compatibility into a deterministic Execution Contract — then hands execution to the runtime.</p>
 <div class="actions"><a class="btn primary" href="https://github.com/Opposum0112/Decretum">Explore the repository</a><a class="btn" href="#workflow">See how it works</a></div>
 <div class="hero-card"><div class="flow">
-<div class="node">Researcher<small>question</small></div><div class="arrow">→</div>
-<div class="node">Recipe<small>intent + boundary</small></div><div class="arrow">→</div>
-<div class="node">Contract<small>validated + frozen</small></div>
+<div class="node">Intent<small>structured request</small></div><div class="arrow">→</div>
+<div class="node">Decretum<small>validate + resolve</small></div><div class="arrow">→</div>
+<div class="node">Contract<small>deterministic handoff</small></div>
 </div><div style="height:10px"></div><div class="flow">
-<div class="node">Autonomous Agent<small>reason + compose</small></div><div class="arrow">→</div>
-<div class="node">Tools / MCP<small>authorized execution</small></div><div class="arrow">→</div>
-<div class="node">Evidence → Findings<small>persistent state</small></div>
+<div class="node">Agent / Harness<small>reason + execute</small></div><div class="arrow">→</div>
+<div class="node">Providers<small>tools • APIs • MCP</small></div><div class="arrow">→</div>
+<div class="node">External Store<small>state + evidence</small></div>
 </div></div>
 </section>
 
 <section id="model" class="wrap">
-<div class="section-head"><div class="kicker">The model</div><h2>Four boundaries. One research loop.</h2><p class="sub">Decretum separates what can be done from what a particular investigation permits, then lets the researcher operate inside that boundary.</p></div>
+<div class="section-head"><div class="kicker">The model</div><h2>Semantic intent. Deterministic handoff.</h2><p class="sub">Knowledge and specifications define meaning. Decretum compiles that intent into a concrete execution boundary. Agents and harnesses own reasoning and execution.</p></div>
 <div class="grid">
 <div class="card"><span class="num">01 / SCHEMA</span><h3>What is possible</h3><p>LinkML defines roles, skills, capabilities, evidence and references as reusable research vocabulary.</p></div>
 <div class="card"><span class="num">02 / RECIPE</span><h3>What is allowed</h3><p>A recipe declares the investigation's required capabilities, constraints and execution boundary.</p></div>
@@ -49,9 +49,9 @@ pre{overflow:auto;background:#05080c;border:1px solid var(--line);border-radius:
 </section>
 
 <section id="workflow" class="wrap">
-<div class="section-head"><div class="kicker">Research loop</div><h2>From question to evidence.</h2></div>
+<div class="section-head"><div class="kicker">Execution loop</div><h2>From intent to execution.</h2></div>
 <div class="split"><div>
-<p class="quote">“Schema = what is possible · Recipe = what this investigation allows · Contract = frozen boundary · Agent = researcher.”</p>
+<p class="quote">“Specification defines meaning · Recipe declares intent · Decretum resolves execution · Contract freezes the handoff.”</p>
 <p class="sub">A capability can evolve independently of its implementation. New providers, integrations and model families can be registered without changing the meaning of existing recipes.</p>
 </div>
 <pre><code>Research question
@@ -75,20 +75,20 @@ Persistent research state
 </section>
 
 <section id="capabilities" class="wrap">
-<div class="section-head"><div class="kicker">Capability fabric</div><h2>Semantic capabilities, interchangeable implementations.</h2><p class="sub">The recipe does not need to know whether a capability is provided by an MCP server, API, CLI tool or another registered integration.</p></div>
+<div class="section-head"><div class="kicker">Capability fabric</div><h2>Semantic capabilities, interchangeable implementations.</h2><p class="sub">A recipe does not need to encode a specific tool, API, VM or harness. Registries and resolution determine what can satisfy it.</p></div>
 <div class="grid">
 <div class="card"><h3>Process observation</h3><p>Sysdig · Falco · Tracee · Tetragon · bpftrace · BCC · strace · auditd</p></div>
 <div class="card"><h3>Network capture</h3><p>tcpdump · tshark · Wireshark · Zeek · Suricata · Snort</p></div>
 <div class="card"><h3>Binary analysis</h3><p>Ghidra · radare2 · binwalk · readelf · objdump</p></div>
 <div class="card"><h3>Memory analysis</h3><p>Volatility · Rekall and other registered implementations</p></div>
 <div class="card"><h3>Local compute</h3><p>Unix · Docker · Podman · Lima · Incus · LXC · KVM · Firecracker · QEMU</p></div>
-<div class="card"><h3>Research references</h3><p>Frameworks · advisories · vulnerability databases · papers · incident reports</p></div>
+<div class="card"><h3>Domain packs</h3><p>Security research · software engineering · infrastructure · data · scientific workflows</p></div>
 </div>
 </section>
 
 <section class="wrap">
-<div class="hero-card"><div class="kicker">Start here</div><h2 style="margin-top:8px">Build the boundary. Then let the research move.</h2><p class="sub">Validate a recipe, resolve capability readiness, compile the contract and begin a research session.</p><div class="actions"><a class="btn primary" href="https://github.com/Opposum0112/Decretum#quick-start">Quick start</a><a class="btn" href="https://github.com/Opposum0112/Decretum/blob/main/README.md">Read the docs</a></div></div>
+<div class="hero-card"><div class="kicker">Start here</div><h2 style="margin-top:8px">Compile the boundary. Then let the runtime move.</h2><p class="sub">Validate intent, resolve capability readiness, compile the contract and hand it to your agent or harness.</p><div class="actions"><a class="btn primary" href="https://github.com/Opposum0112/Decretum#quick-start">Quick start</a><a class="btn" href="https://github.com/Opposum0112/Decretum/blob/main/README.md">Read the docs</a></div></div>
 </section>
 </main>
-<footer class="wrap footer"><div><strong style="color:var(--text)">Decretum</strong><br>Declarative security research contracts.</div><div><a href="https://github.com/Opposum0112/Decretum">GitHub</a> · <a href="https://github.com/Opposum0112/Decretum/blob/main/README.md">Documentation</a></div></footer>
+<footer class="wrap footer"><div><strong style="color:var(--text)">Decretum</strong><br>Declarative execution contracts for agents and harnesses.</div><div><a href="https://github.com/Opposum0112/Decretum">GitHub</a> · <a href="https://github.com/Opposum0112/Decretum/blob/main/README.md">Documentation</a></div></footer>
 </body></html>
