@@ -1,0 +1,7 @@
+apiVersion: decretum.dev/v1
+kind: CapabilityRegistry
+version: "1.0"
+
+# Canonical, researcher-approved capability semantics.
+# Providers live in schema/provider_registry.yaml and implement these semantics.
+capabilities: {}
