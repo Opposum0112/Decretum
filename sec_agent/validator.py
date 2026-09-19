@@ -52,6 +52,18 @@ def validate_provider_registry(registry: dict[str, Any]) -> list[str]:
         capabilities = provider.get("capabilities")
         if not isinstance(capabilities, list) or not capabilities:
             errors.append(f"provider {provider_id!r} requires non-empty capabilities")
+        if provider.get("kind") is not None and not isinstance(provider.get("kind"), str):
+            errors.append(f"provider {provider_id!r}.kind must be a string")
+        for field in ("provisioning", "lifecycle"):
+            section = provider.get(field)
+            if section is not None and not isinstance(section, dict):
+                errors.append(f"provider {provider_id!r}.{field} must be a mapping")
+        provisioning = provider.get("provisioning") or {}
+        if provisioning and not isinstance(provisioning.get("installable", False), bool):
+            errors.append(f"provider {provider_id!r}.provisioning.installable must be boolean")
+        lifecycle = provider.get("lifecycle") or {}
+        if lifecycle and not isinstance(lifecycle.get("collect_before_destroy", True), bool):
+            errors.append(f"provider {provider_id!r}.lifecycle.collect_before_destroy must be boolean")
     return errors
 
 def provider_capability_index(registry: dict[str, Any]) -> dict[str, list[str]]:
