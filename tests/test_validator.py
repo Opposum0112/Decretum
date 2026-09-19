@@ -1,7 +1,12 @@
 from pathlib import Path
 
 from sec_agent.compiler import compile_recipe
-from sec_agent.validator import load_recipe, structural_validate, validate_capability_providers, registry_errors
+from sec_agent.validator import (
+    load_recipe,
+    structural_validate,
+    validate_capability_providers,
+    registry_errors,
+)
 
 RECIPE = Path("recipes/openai-hosted-malware-analysis.yaml")
 
@@ -20,12 +25,16 @@ def test_compiler_produces_deterministic_contract():
     assert "process.execute" in a.contract["capabilities"]
 
 
-def test_compiled_contract_keeps_harness_execution_boundary():
+def test_compiled_contract_is_harness_handoff_only():
     recipe = load_recipe(RECIPE)
     contract = compile_recipe(recipe, Path("artifacts/test-contract"))
-    assert contract.contract["execution"]["harness"] == "codex"
-    assert contract.contract["research_loop"]["interactive"] is True
-    assert "provision" in contract.contract["research_loop"]["harness_responsible_for"]
+    assert contract.contract["handoff"]["target"] == "external_harness_runtime"
+    assert contract.contract["handoff"]["mode"] == "contract_only"
+    assert contract.contract["handoff"]["decretum_stops_after_compilation"] is True
+    assert "researcher_interaction" in contract.contract["handoff"]["runtime_owns"]
+    assert "research_store_persistence" in contract.contract["handoff"]["runtime_owns"]
+    assert "runtime_owns" in contract.contract["handoff"]
+    assert "provision" not in contract.contract["research_loop"]
 
 
 def test_noncanonical_capability_is_rejected():
