@@ -164,6 +164,80 @@ decretum replay artifacts/<research-id>/research-contract.json
 
 Replay is read-only. It does not launch tools, containers, VMs, MCP servers, or agents.
 
+## Discover execution surfaces
+
+You can now ask Decretum what is actually available on the current host before writing or compiling a recipe:
+
+```bash
+decretum capabilities discover
+```
+
+For a recipe, include its requested capabilities and get candidate definitions for anything that is not yet registered:
+
+```bash
+decretum capabilities discover --recipe recipes/<recipe>.yaml
+```
+
+Discovery writes:
+
+```text
+artifacts/capability-discovery/
+├── capability-surface-manifest.json
+└── capability-candidates.yaml   # only when review is required
+```
+
+A discovered surface records:
+
+```text
+capability
+    ↓
+provider
+    ↓
+interface: tool | api | mcp
+    ↓
+local availability
+    ↓
+compatible installed harnesses
+    ↓
+ready execution surface
+```
+
+For example:
+
+```text
+network.capture
+├── tshark
+│   └── tool → Codex/Goose/ADK → READY
+├── tcpdump
+│   └── tool → Codex/Goose/ADK → READY
+└── pcap-mcp
+    └── MCP → registered, but not locally verified
+```
+
+### Discovery does not silently change the ontology
+
+This is an important boundary:
+
+```text
+DISCOVER
+   ↓
+PROPOSE
+   ↓
+VALIDATE
+   ↓
+APPROVE
+   ↓
+REGISTER
+   ↓
+COMPOSE INTO RECIPES
+```
+
+Decretum can discover that a new execution surface exists, but it does not infer security semantics from an executable name and does not automatically edit the canonical LinkML schema.
+
+If a recipe references an unknown capability, discovery creates a reviewable CapabilityCandidate. A researcher can then define its semantics, register providers/integrations, add tests, and make it available for future recipe composition.
+
+This keeps the ontology portable while allowing host-specific execution surfaces to evolve quickly.
+
 ## How the system decides what can run
 
 ```text
