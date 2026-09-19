@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from .readiness import assess_readiness\nfrom .policy import annotate_provider, plan_step
+from .equivalence import annotate_equivalence
 from .validator import DEFAULT_PROVIDER_REGISTRY, load_provider_registry, provider_capability_index, registry_errors
 
 
