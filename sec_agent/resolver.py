@@ -14,7 +14,7 @@ from .validator import (
 
 
 def _required(recipe: dict[str, Any]) -> set[str]:
-    required = set()
+    required = {"artifact.read", "artifact.collect"}
     for cap in recipe.get("capability_catalog", []) or []:
         if isinstance(cap, dict) and cap.get("id"):
             required.add(cap["id"])
