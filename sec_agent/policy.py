@@ -51,6 +51,7 @@ def annotate_provider(
         **provider,
         "policy": policy,
         "provider_risk": provider_risk,
+        "semantics": {"isolation": provider.get("isolation", "unspecified"), "network": provider.get("network", "unspecified"), "privileged": bool(provider.get("privileged", False)), "evidence_outputs": sorted(provider.get("evidence_outputs", []) or []), "execution_modes": sorted(provider.get("execution_modes", []) or [])},
         "policy_compatible": not policy["denied"],
     }
 
