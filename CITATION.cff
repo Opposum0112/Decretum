@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+title: "Decretum"
+message: "If Decretum contributes to your work, please cite the project."
+type: software
+authors:
+  - family-names: Iyer
+    given-names: Vigy
+repository-code: "https://github.com/Opposum0112/Decretum"
+license: Apache-2.0
+version: "0.3.0"
+date-released: 2026-09-19
+keywords:
+  - declarative execution
+  - agentic systems
+  - execution contracts
+  - capability resolution
+  - security research
