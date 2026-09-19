@@ -9,9 +9,17 @@ providers:
   tcpdump:
     interface: {type: tool, executable: tcpdump}
     capabilities: [network.capture, network.observe]
+    isolation: host
+    network: host
+    privileged: false
+    execution_modes: [capture]
   tshark:
     interface: {type: tool, executable: tshark}
     capabilities: [network.capture, network.observe, protocol.analyze]
+    isolation: host
+    network: host
+    privileged: false
+    execution_modes: [capture, analyze]
   strace:
     interface: {type: tool, executable: strace}
     capabilities: [process.observe, syscall.observe]
