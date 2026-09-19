@@ -16,7 +16,7 @@ classes:
       type: {range: ProviderInterfaceType, required: true}
       executable: {range: string}
       endpoint: {range: string}
-      server: {range: string}
+      server: {range: string}\n      transport: {range: string}\n      command: {range: string}
 
   CapabilityProvider:
     attributes:
@@ -28,7 +28,7 @@ classes:
     attributes:
       id: {range: string, required: true}
       type: {range: ProviderInterfaceType, required: true}
-      provider: {range: string, required: true}
+      provider: {range: string, required: true}\n      transport: {range: string}\n      endpoint: {range: string}\n      command: {range: string}
 
   Harness:
     attributes:
