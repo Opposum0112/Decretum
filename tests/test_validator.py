@@ -101,3 +101,25 @@ def test_recipe_uses_independent_profiles():
     assert recipe["harness_profile"] == "interactive-research"
     assert "compute" not in recipe
     assert "instrumentation" not in recipe
+
+
+def test_contract_has_frozen_external_runtime_boundary():
+    recipe = load_recipe(RECIPE)
+    contract = compile_recipe(recipe, Path("artifacts/test-boundary"))
+    handoff = contract.contract["handoff"]
+    assert handoff["target"] == "external_harness_runtime"
+    assert handoff["decretum_stops_after_compilation"] is True
+    assert "evidence_collection" in handoff["runtime_owns"]
+    assert "report_generation" in handoff["runtime_owns"]
+    assert handoff["new_capability_or_requirement"] == "return_to_decretum_for_resolution_and_recompilation"
+
+
+def test_harness_adapter_only_prepares_handoff():
+    from sec_agent.harness_adapters import get_adapter
+    recipe = load_recipe(RECIPE)
+    contract = compile_recipe(recipe, Path("artifacts/test-adapter"))
+    adapter = get_adapter(contract.contract["execution"]["harness"])
+    envelope = adapter.prepare(contract.contract)
+    assert envelope["type"] == "research_execution_handoff"
+    assert envelope["execution"] == "external_harness_runtime"
+    assert envelope["decretum_action"] == "none_after_handoff"
