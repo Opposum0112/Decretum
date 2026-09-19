@@ -8,7 +8,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from .compiler import compile_recipe, write_contract\nfrom .harness_adapters import get_adapter, available_adapters
+from .compiler import compile_recipe, write_contract\nfrom .capability_discovery import discover_capability_surfaces, write_candidate_yaml, write_discovery_report\nfrom .harness_adapters import get_adapter, available_adapters
 from .openai_runner import create_session, save_session\nfrom .research_state import append_event, evidence_context, record_execution, record_execution_result, verify_ledger
 from .resolver import resolve_capabilities
 from .validator import validate_recipe
