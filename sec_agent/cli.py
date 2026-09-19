@@ -16,8 +16,33 @@ from .research_state import append_event, evidence_context, record_execution, re
 from .resolver import resolve_capabilities
 from .validator import validate_recipe
 
-app = typer.Typer(help="Decretum: declarative local security research executed by Codex")
+app = typer.Typer(help="Decretum: declarative local security research compiler")
+capabilities_app = typer.Typer(help="Discover and inspect capability execution surfaces.")
+app.add_typer(capabilities_app, name="capabilities")
 console = Console()
+
+
+@capabilities_app.command("discover")
+def discover_capabilities(
+    recipe: Path | None = typer.Option(
+        None, "--recipe", help="Optional recipe used to generate missing-capability candidates."
+    ),
+    output: Path = typer.Option(Path("artifacts/capability-discovery"), "--output"),
+) -> None:
+    """Discover local provider/harness execution surfaces without changing the canonical schema."""
+    from .validator import load_recipe
+
+    recipe_data = load_recipe(recipe) if recipe else None
+    report = discover_capability_surfaces(recipe=recipe_data)
+    report_path = write_discovery_report(report, output)
+    candidate_path = write_candidate_yaml(report, output)
+    console.print(f"Discovery manifest: {report_path}")
+    console.print(f"Surfaces discovered: {len(report.get('surfaces', []))}")
+    ready = sum(1 for item in report.get("surfaces", []) if item.get("ready"))
+    console.print(f"Ready surfaces: {ready}")
+    if candidate_path:
+        console.print(f"Candidates requiring review: {candidate_path}")
+    console.print("Canonical schema was not modified.")
 
 
 @app.command()
