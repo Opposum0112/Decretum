@@ -11,7 +11,7 @@ import re
 import yaml
 
 DEFAULT_CAPABILITY_REGISTRY = Path(__file__).resolve().parents[1] / "schema" / "capability_registry.yaml"
-VALID_KINDS = {"artifact","filesystem","process","network","identity","cloud","container","instrumentation","analysis","reporting"}
+VALID_KINDS = {"artifact","filesystem","process","network","identity","cloud","container","instrumentation","analysis","reporting","compute"}
 VALID_RISKS = {"read","observe","collect","execute","write","privileged","network_access"}
 ID_RE = re.compile(r"^[a-z][a-z0-9_-]*(\.[a-z0-9_-]+)+$")
 
