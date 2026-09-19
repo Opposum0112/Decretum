@@ -93,3 +93,19 @@ def test_mcp_stdio_configuration_is_ready():
     integration = [{"provider": "pcap-mcp", "transport": "stdio", "command": "pcap-mcp"}]
     result = check_provider_readiness("pcap-mcp", provider, {"tools": {}, "compute": {}}, integration)
     assert result["ready"] is True
+
+
+def test_resolution_produces_experiment_plan_and_fallbacks():
+    from sec_agent.resolver import resolve_capabilities
+    recipe, errors, _ = validate_recipe(RECIPE)
+    assert not errors
+    result = resolve_capabilities(recipe)
+    assert "experiment_plan" in result
+    assert "failures" in result
+    for item in result["capabilities"]:
+        assert all("provider_ready" in provider for provider in item["providers"])
+
+
+def test_candidate_rank_is_deterministic():
+    from sec_agent.resolver import _candidate_rank
+    assert _candidate_rank({"provider": "b", "interface": "tool", "ready": True}) < _candidate_rank({"provider": "a", "interface": "api", "ready": True})
