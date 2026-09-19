@@ -1,7 +1,7 @@
-"""DEPRECATED runtime research-state implementation.
+"""Compatibility boundary for legacy runtime-state imports.
 
-Persistent research state belongs to the external harness/runtime and research
-store. Decretum retains only compile-time provenance and read-only verification.
+Decretum does not own persistent research state. External harness runtimes and
+their research stores own sessions, evidence, findings and reports.
 """
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 def _removed(*args, **kwargs):
     raise RuntimeError(
-        "Research sessions, evidence, findings and reports are outside Decretum. " 
+        "Research sessions, evidence, findings and reports are outside Decretum. "
         "Use the external harness research store."
     )
 
@@ -27,5 +27,9 @@ evidence_context = _removed
 
 
 def verify_ledger(root):
-    """Legacy compatibility shim; Decretum does not own the research ledger."""
-    return {"valid": False, "events": 0, "errors": ["research ledger is owned by the external runtime"]}
+    """Legacy compatibility shim; verification belongs to the external store."""
+    return {
+        "valid": False,
+        "events": 0,
+        "errors": ["research ledger is owned by the external runtime"],
+    }
