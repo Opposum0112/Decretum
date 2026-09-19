@@ -160,3 +160,18 @@ def test_schema_governed_compatibility_accepts_matching_provider():
     spec = {"risk": "observe", "allowed_networks": ["restricted"], "allowed_execution_modes": ["capture"]}
     result = compatibility(provider, "network.capture", spec)
     assert result["compatible"] is True
+
+
+def test_contract_contains_auditable_plan_digest():
+    recipe, errors, _ = validate_recipe(RECIPE)
+    assert not errors
+    contract = compile_recipe(recipe, Path("artifacts/test"))
+    assert len(contract.contract["plan_digest"]) == 64
+    assert "resolution" in contract.contract
+    assert "failures" in contract.contract["resolution"]
+
+
+def test_plan_digest_is_deterministic():
+    from sec_agent.compiler import _plan_digest
+    plan = {"status": "ready", "capabilities": [], "failures": [], "harnesses": ["codex"], "readiness": {}, "experiment_plan": []}
+    assert _plan_digest(plan) == _plan_digest(plan)
