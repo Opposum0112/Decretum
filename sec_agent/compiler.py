@@ -96,12 +96,6 @@ def compile_recipe(
         },
         "contract_version": "5",
         "contract_id": "",
-        "research": {
-            "id": recipe["id"],
-            "name": recipe["name"],
-            "version": recipe["version"],
-            "objective": recipe["objective"],
-        },
         "capabilities": sorted(required_capabilities(recipe, registry_path)),
         "profiles": resolution.get("profiles", {}),
         "experiment_graph": experiment_graph,
@@ -153,7 +147,7 @@ def compile_recipe(
         "compilation_manifest": {"artifact": "compilation-manifest.json"},
     }
 
-    if recipe.get("domain", "security_research") == "security_research":\n        body["research_loop"] = {\n            "interactive": True,\n            "owner": "external_harness_runtime",\n            "persist_evidence": True,\n            "persist_findings": True,\n            "persist_report": True,\n        }\n\n    source = Path(recipe.get("_source_path", "recipe.yaml"))
+    if recipe.get("domain", "security_research") == "security_research":\n        body["research"] = {\n            "id": recipe["id"],\n            "name": recipe["name"],\n            "version": recipe["version"],\n            "objective": recipe["objective"],\n        }\n        body["research_loop"] = {\n            "interactive": True,\n            "owner": "external_harness_runtime",\n            "persist_evidence": True,\n            "persist_findings": True,\n            "persist_report": True,\n        }\n\n    source = Path(recipe.get("_source_path", "recipe.yaml"))
     manifest = create_manifest(source, schema_path, registry_path, artifact_dir) if source.exists() else None
     if manifest:
         body["compilation_manifest"] = {
