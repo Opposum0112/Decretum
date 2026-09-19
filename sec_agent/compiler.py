@@ -65,9 +65,7 @@ def compile_recipe(recipe: dict[str, Any], artifact_dir: Path, registry_path: Pa
         "execution_surfaces": resolution.get("execution_surfaces", []),
         "experiment_plan": execution_plan,
     }
-    harness = ((recipe.get("environment") or {}).get("orchestration") or {}).get("executor")
-    if not harness:
-        harness = (resolution.get("profiles", {}).get("harness") or {}).get("preferred", [None])[0] or "codex"
+    harness = (resolution.get("profiles", {}).get("harness") or {}).get("preferred", [None])[0] or "codex"
     body: dict[str, Any] = {
         "apiVersion": "decretum.dev/v1",
         "kind": "ResearchExecutionContract",
@@ -85,7 +83,7 @@ def compile_recipe(recipe: dict[str, Any], artifact_dir: Path, registry_path: Pa
                 "steps": [step["id"] for step in execution_plan if step.get("approval_required")],
             },
             "policy": recipe.get("policy", {}),
-            "orchestration": (recipe.get("environment") or {}).get("orchestration", {"executor": harness, "mode": "interactive"}),
+            "orchestration": {"executor": harness, "mode": "interactive"},
         },
         "research_loop": {
             "interactive": True,
