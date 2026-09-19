@@ -120,3 +120,84 @@ def test_provider_is_open_world():
     }
     registry = Path("schema/provider_registry.yaml")
     assert isinstance(validate_capability_providers(recipe, registry), list)
+
+
+def test_recipe_level_instrumentation_and_compute_requirements_validate():
+    from sec_agent.validator import structural_validate, validate_capability_providers, load_recipe
+    recipe = load_recipe(Path("recipes/suspicious-network-investigation.yaml"))
+    assert structural_validate(recipe) == []
+    assert validate_capability_providers(recipe) == []
+
+
+def test_preferred_provider_must_implement_required_capability(tmp_path):
+    recipe = {
+        "capabilities": ["network.capture"],
+        "instrumentation": {
+            "required": ["network.metadata"],
+            "preferred": ["tcpdump"],
+        },
+        "compute": {
+            "required": ["compute.vm"],
+            "preferred": ["lima"],
+        },
+        "environment": {},
+        "skills": [],
+        "role_definition": {},
+        "experiments": [],
+    }
+    registry = tmp_path / "providers.yaml"
+    registry.write_text(
+        """
+apiVersion: decretum.dev/v1
+kind: CapabilityProviderRegistry
+version: "1.0"
+providers:
+  tcpdump:
+    interface: {type: tool, executable: tcpdump}
+    capabilities: [network.capture]
+  lima:
+    interface: {type: api, endpoint: local:lima}
+    capabilities: [compute.vm]
+harnesses: {}
+integrations: {}
+models: {}
+""",
+        encoding="utf-8",
+    )
+    errors = validate_capability_providers(recipe, registry)
+    assert any("preferred instrumentation provider 'tcpdump'" in error for error in errors)
+
+
+def test_preferred_provider_is_a_hint_not_a_hard_requirement(tmp_path):
+    recipe = {
+        "capabilities": ["network.capture"],
+        "instrumentation": {
+            "required": ["network.capture"],
+            "preferred": ["tcpdump"],
+        },
+        "compute": {},
+        "environment": {},
+        "skills": [],
+        "role_definition": {},
+        "experiments": [],
+    }
+    registry = tmp_path / "providers.yaml"
+    registry.write_text(
+        """
+apiVersion: decretum.dev/v1
+kind: CapabilityProviderRegistry
+version: "1.0"
+providers:
+  tcpdump:
+    interface: {type: tool, executable: tcpdump}
+    capabilities: [network.capture]
+  tshark:
+    interface: {type: tool, executable: tshark}
+    capabilities: [network.capture]
+harnesses: {}
+integrations: {}
+models: {}
+""",
+        encoding="utf-8",
+    )
+    assert validate_capability_providers(recipe, registry) == []
