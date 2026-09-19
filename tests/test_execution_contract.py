@@ -143,3 +143,20 @@ def test_equivalent_fallback_is_marked_safe():
     b = {"interface": {"type": "tool"}, "isolation": "host", "network": "host", "privileged": False}
     result = annotate_equivalence(a, b, "network.capture")
     assert result["safe_fallback"] is True
+
+
+def test_schema_governed_compatibility_rejects_network_mismatch():
+    from sec_agent.compatibility import compatibility
+    provider = {"interface": {"type": "tool"}, "isolation": "host", "network": "internet", "execution_modes": ["capture"]}
+    spec = {"risk": "observe", "allowed_networks": ["none", "restricted"], "allowed_execution_modes": ["capture"]}
+    result = compatibility(provider, "network.capture", spec)
+    assert result["compatible"] is False
+    assert "network_not_allowed" in result["violations"]
+
+
+def test_schema_governed_compatibility_accepts_matching_provider():
+    from sec_agent.compatibility import compatibility
+    provider = {"interface": {"type": "tool"}, "isolation": "host", "network": "restricted", "execution_modes": ["capture"]}
+    spec = {"risk": "observe", "allowed_networks": ["restricted"], "allowed_execution_modes": ["capture"]}
+    result = compatibility(provider, "network.capture", spec)
+    assert result["compatible"] is True
