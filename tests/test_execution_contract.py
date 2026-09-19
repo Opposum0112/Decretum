@@ -58,3 +58,13 @@ def test_registered_harness_adapter_prepares_contract():
         assert prepared["protocol"] == "decretum.dev/v1"
         assert prepared["adapter"] == "codex"
         assert prepared["contract_id"] == contract.contract["contract_id"]
+
+
+def test_runtime_discovery_is_ephemeral():
+    from sec_agent.discovery import discover_runtime
+    from sec_agent.validator import load_provider_registry, DEFAULT_PROVIDER_REGISTRY
+    registry = load_provider_registry(str(DEFAULT_PROVIDER_REGISTRY))
+    result = discover_runtime(registry)
+    assert set(result) == {"tools", "harnesses", "compute"}
+    assert "docker" in result["compute"]
+    assert "codex" in result["harnesses"]
