@@ -98,7 +98,27 @@ Discovery **never silently changes the canonical capability vocabulary**.
 
 # Write a recipe
 
-Recipes should stay small. They describe the research objective and compose canonical capabilities into experiments.
+Recipes are the actual experiment composition. Keep them small and semantic: describe the objective, compose canonical capabilities, and define experiment steps.
+
+Configuration preferences are deliberately separate:
+
+```text
+Canonical Schema
+  └─ defines capability semantics
+
+Recipe
+  └─ composes capabilities into an experiment
+
+Profiles
+  ├─ Infrastructure Profile → VM/container/resources/OS/network preferences
+  ├─ Instrumentation Profile → observation/telemetry preferences
+  └─ Harness Profile → execution/orchestration preferences
+
+Provider Registry
+  └─ concrete implementations and access surfaces
+```
+
+All four layers are extensible. Adding a profile or provider must not redefine a capability.
 
 For example:
 
@@ -144,6 +164,20 @@ A recipe does **not** need to describe:
 Those are execution concerns.
 
 ---
+
+# Profiles
+
+Profiles are reusable configuration preferences, not capabilities and not experiment steps.
+
+```yaml
+infrastructure_profile: isolated-linux-vm
+instrumentation_profile: linux-network-observation
+harness_profile: interactive-research
+```
+
+The same recipe can run with different profiles without changing experiment semantics. Infrastructure profiles configure VM/container/resource/OS/isolation preferences; instrumentation profiles configure observation preferences; harness profiles configure agent execution preferences.
+
+The reusable profile registry is schema/profile_registry.yaml.
 
 # Validate
 
@@ -325,37 +359,18 @@ Replay does not execute tools, containers, VMs, MCP servers or agents.
 
 ---
 
-## Recipe-level instrumentation and compute
+## Capability, recipe, profile and provider boundaries
 
-Recipes can now express both **what must be available** and **which implementation providers are preferred**, without encoding provider lifecycle or provisioning logic.
+| Layer | Purpose | Example |
+|---|---|---|
+| Schema / Capability | Canonical semantic contract | network.capture |
+| Recipe | Actual experiment composition | observe → capture → preserve |
+| Infrastructure Profile | Execution configuration preference | Lima VM, 4 vCPU, Ubuntu |
+| Instrumentation Profile | Observation configuration preference | Sysdig + Zeek |
+| Harness Profile | Agent execution preference | Codex interactive |
+| Provider Registry | Concrete implementation | tshark, lima, sysdig |
 
-```yaml
-instrumentation:
-  required:
-    - syscall.observe
-    - network.metadata
-  preferred:
-    - sysdig
-    - zeek
-
-compute:
-  required:
-    - compute.vm
-  preferred:
-    - lima
-    - incus
-```
-
-The semantics are deliberately small:
-
-- `required` lists capability IDs.
-- `preferred` lists provider IDs from `schema/provider_registry.yaml`.
-- Validation checks that preferred providers are registered and advertise a relevant required capability.
-- Resolution records the preferences and marks matching providers as preferred.
-- Experiment bindings prefer those providers when they are ready and policy-compatible.
-- Provisioning, instrumentation activation, VM lifecycle, and teardown remain harness/runtime responsibilities.
-
-See `recipes/suspicious-network-investigation.yaml` for a complete example.
+A recipe should not contain provider-specific infrastructure or instrumentation configuration. The resolver combines canonical capabilities with profiles and validates the complete provider → integration → execution-surface → harness path.
 
 # Adding a capability
 
@@ -509,6 +524,7 @@ Decretum/
 │   ├── sec_research_metamodel.yaml
 │   ├── capability_registry.yaml
 │   ├── provider_registry.yaml
+│   ├── profile_registry.yaml
 │   └── provider_registry.schema.yaml
 ├── recipes/
 ├── sec_agent/
