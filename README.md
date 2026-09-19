@@ -246,6 +246,23 @@ Think of this as:
 
 ---
 
+# Extensible compute providers
+
+Compute providers are **open-world LinkML identifiers**, not a hard-coded provider enum. The metamodel defines provider and lifecycle semantics through `ComputeProviderSpec`, `ProviderInterface`, `ProvisioningSpec`, `LifecycleSpec`, `EnvironmentPlan`, `TeardownSpec`, and `AnalysisSpec`.
+
+Adding a new compute provider follows this data-driven path:
+
+1. Register the provider in `schema/provider_registry.yaml`.
+2. Declare its interface, capabilities, provisioning policy, lifecycle, isolation, network, architecture, snapshot and ephemeral behavior.
+3. Discovery determines whether it is actually available.
+4. Resolution checks capability, harness, execution-surface, policy and compatibility.
+5. Compilation emits schema-shaped environment, provisioning, teardown and analysis plans.
+6. Host installation is approval-controlled; planning itself never mutates the host.
+7. Ephemeral environments can collect evidence before teardown, leaving persistent artifacts for interactive analysis.
+
+The compiler should therefore **not** contain provider-specific branches such as `if provider == "newvm"`. A future provider can be introduced through registry data that conforms to the LinkML contract.
+
+
 # 4. Resolve the recipe
 
 Run:
