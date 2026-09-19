@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .resolver import resolve_capabilities
-from .validator import DEFAULT_PROVIDER_REGISTRY, required_capabilities
+from .validator import DEFAULT_PROVIDER_REGISTRY, required_capabilities\nfrom .registry_snapshot import snapshot_registry
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,7 +53,7 @@ def compile_recipe(
     artifact_dir: Path,
     registry_path: Path = DEFAULT_PROVIDER_REGISTRY,
 ) -> ExecutionContract:
-    resolution = resolve_capabilities(recipe, registry_path)
+    registry_snapshot = snapshot_registry(registry_path, artifact_dir)\n    resolution = resolve_capabilities(recipe, registry_path)
     steps = _experiment_steps(recipe)
     experiment_graph = {
         "steps": steps,
@@ -111,7 +111,7 @@ def compile_recipe(
         "skills": recipe.get("skills", []),
         "skill_catalog": recipe.get("skill_catalog", []),
         "capability_catalog": recipe.get("capability_catalog", []),
-        "provider_registry": "schema/provider_registry.yaml",
+        "provider_registry": "schema/provider_registry.yaml",\n        "provider_registry_snapshot": {\n            "digest": registry_snapshot["digest"],\n            "artifact": "provider-registry.snapshot.json",\n        },
         "provider_interfaces": ["mcp", "api", "tool"],
         "capability_graph": [{
             "skill": skill.get("id"),
