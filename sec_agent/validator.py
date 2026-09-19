@@ -10,7 +10,7 @@ SKILL_EXECUTION_MODES = {"codex_native", "shell", "mcp", "script", "analyst_revi
 TOOLS = {"sysdig", "falco", "tracee", "tetragon", "bpftrace", "bcc", "libbpf", "ebpf_exporter", "strace", "ltrace", "perf", "ftrace", "auditd", "auditbeat", "osquery", "procmon", "psutil", "tcpdump", "tshark", "dumpcap", "wireshark", "zeek", "suricata", "snort", "netsniff_ng", "conntrack", "nftables", "iptables", "ethtool", "ss", "ip", "dig", "resolvectl", "bpftool", "pahole", "opensnoop", "execsnoop", "tcpconnect", "tcplife", "filetop", "biolatency", "runqlat", "funccount", "openssl_trace", "volatility", "rekall", "yara", "clamav", "ghidra", "radare2", "binwalk", "strings", "readelf", "objdump", "lsof", "nsenter", "capsh", "unshare"}
 CAPABILITY_KINDS = {"artifact", "filesystem", "process", "network", "identity", "cloud", "container", "instrumentation", "analysis", "reporting"}
 CAPABILITY_RISKS = {"read", "observe", "collect", "execute", "write", "privileged", "network_access"}
-BACKENDS = {"unix", "docker", "podman", "lima", "incus", "lxc", "kvm", "firecracker", "qemu"}
+
 
 
 from functools import lru_cache
@@ -91,10 +91,7 @@ def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = 
     role = recipe.get("role_definition") or {}
     if isinstance(role, dict):
         required.update(role.get("default_capabilities", []) or [])
-    environment = recipe.get("environment") or {}
-    if isinstance(environment, dict):
-        compute = environment.get("compute") or {}
-        sandbox = environment.get("sandbox") or {}
+
     for capability in sorted(required):
         if capability and capability not in index:
             errors.append(f"capability {capability!r} has no registered provider (MCP/API/tool)")
@@ -192,8 +189,7 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
         errors.append("environment.sandbox must be a mapping")
     else:
         backend = sandbox.get("backend")
-        if backend not in BACKENDS: errors.append(f"unsupported sandbox backend: {backend!r}")
-        if backend in {"docker","podman"} and not sandbox.get("image"): errors.append(f"{backend} sandbox requires environment.sandbox.image")
+        if not isinstance(backend, str) or not backend: errors.append("environment.sandbox.backend must be a provider identifier")
         if sandbox.get("inherit_host_environment", False): errors.append("host environment inheritance must remain disabled")
         if environment.get("host_mounts", False): errors.append("host filesystem mounts must remain disabled")
     if environment.get("privileged", False): errors.append("privileged execution is prohibited by default")
