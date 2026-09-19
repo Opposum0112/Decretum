@@ -214,3 +214,17 @@ def test_ledger_tampering_is_detected():
     lines[0] = lines[0].replace('"value": 1', '"value": 999')
     path.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
     assert verify_ledger(root)["valid"] is False
+
+
+def test_replay_verifies_plan_digest():
+    from sec_agent.replay import verify_plan_digest
+    plan = {"status": "ready", "capabilities": [], "failures": [], "harnesses": ["codex"], "readiness": {}, "experiment_plan": []}
+    from sec_agent.compiler import _plan_digest
+    contract = {"plan_digest": _plan_digest(plan), "resolution": plan}
+    assert verify_plan_digest(contract)["valid"] is True
+
+
+def test_replay_detects_plan_tampering():
+    from sec_agent.replay import verify_plan_digest
+    contract = {"plan_digest": "a"*64, "resolution": {"status": "ready", "capabilities": [], "failures": [], "harnesses": [], "readiness": {}, "experiment_plan": []}}
+    assert verify_plan_digest(contract)["valid"] is False
