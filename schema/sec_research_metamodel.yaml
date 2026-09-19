@@ -221,7 +221,7 @@ classes:
       reports: {range: ReportSpec, multivalued: true}
       hypotheses: {range: Hypothesis, multivalued: true}
       experiment_requests: {range: ExperimentRequest, multivalued: true}
-      findings: {range: ResearchFinding, multivalued: true}
+      findings: {range: ResearchFinding, multivalued: true}\n      experiments: {range: ExperimentStep, multivalued: true}
 
   CapabilitySpec:
     attributes:
@@ -331,7 +331,18 @@ classes:
       approval_required: {range: boolean, ifabsent: true}
       status: {range: string, ifabsent: proposed}
 
-  ExperimentResult:
+
+  ExperimentStep:
+    attributes:
+      id: {range: string, required: true}
+      objective: {range: string}
+      capability: {range: string}
+      capabilities: {range: string, multivalued: true}
+      depends_on: {range: string, multivalued: true}
+      inputs: {range: string, multivalued: true}
+      outputs: {range: string, multivalued: true}
+      approval_required: {range: boolean, ifabsent: false}
+\n  ExperimentResult:
     attributes:
       id: {range: string, required: true}
       request_id: {range: string, required: true}
