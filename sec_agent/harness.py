@@ -1,7 +1,6 @@
-"""Contract handoff interfaces for external harness integrations.
+"""Contract handoff interfaces for external harness runtimes.
 
-These interfaces translate Decretum IR into a handoff envelope. They do not
-execute agents, experiments or research sessions.
+Adapters prepare a portable handoff envelope. They never execute work.
 """
 from __future__ import annotations
 
@@ -10,17 +9,17 @@ from typing import Any
 
 
 class HarnessAdapter(ABC):
-    """Minimal handoff adapter implemented by an external-runtime integration."""
+    """Minimal adapter boundary for an external runtime."""
 
     id: str
 
     @abstractmethod
     def supports(self, contract: dict[str, Any]) -> bool:
-        """Return whether the external runtime can consume the contract."""
+        """Return whether the runtime can consume the contract."""
 
     @abstractmethod
     def prepare(self, contract: dict[str, Any]) -> dict[str, Any]:
-        """Translate the portable contract into a handoff envelope."""
+        """Prepare a handoff envelope without executing the contract."""
 
 
 class GenericHarnessAdapter(HarnessAdapter):
@@ -28,7 +27,7 @@ class GenericHarnessAdapter(HarnessAdapter):
 
     def supports(self, contract: dict[str, Any]) -> bool:
         return (
-            contract.get("kind") == "ResearchExecutionContract"
+            contract.get("kind") in {"ExecutionContract", "ResearchExecutionContract"}
             and contract.get("handoff", {}).get("target") == "external_harness_runtime"
         )
 
@@ -37,7 +36,7 @@ class GenericHarnessAdapter(HarnessAdapter):
             raise ValueError("contract is not a valid external-runtime handoff")
         return {
             "protocol": "decretum.dev/v1",
-            "type": "research_execution_handoff",
+            "type": "execution_handoff",
             "adapter": self.id,
             "contract_id": contract["contract_id"],
             "contract": contract,
