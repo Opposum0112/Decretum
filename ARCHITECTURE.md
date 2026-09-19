@@ -4,53 +4,110 @@ This document records the architectural boundary that future changes must preser
 
 ## Frozen rule
 
-> **Decretum is a compiler/resolver, not a runtime.**
+> **Decretum is a domain-neutral declarative execution compiler/resolver, not a runtime.**
 
 Decretum:
 
 - defines and validates canonical capability semantics
+- loads domain schemas and registries
 - discovers execution surfaces
 - resolves providers, integrations, profiles and harness compatibility
 - applies policy
-- compiles a portable ResearchExecutionContract
+- compiles a portable Execution Contract
 - records compile-time provenance and registry snapshots
 - verifies contracts read-only
 
 Decretum does **not**:
 
 - start or operate an agent runtime
-- provision research environments
-- conduct researcher interaction
-- execute experiments
-- collect evidence
+- provision environments itself
+- conduct researcher/agent interaction
+- execute experiments or software tasks
+- collect evidence as runtime state
 - develop findings
 - generate reports
-- own persistent research sessions
-- own the research/evidence database
+- own persistent sessions or stores
+
+## Domain neutrality
+
+Security research is the current reference domain, not the compiler's architectural boundary.
+
+The core compiler must not contain domain-specific execution branches. Domain-specific semantics belong in domain packs:
+
+```
+Core
+  schema loading
+  capability registry
+  provider registry
+  profiles
+  discovery
+  validation
+  resolver
+  policy
+  compiler
+       |
+       +---- Security research pack
+       +---- Software engineering pack
+       +---- Infrastructure pack
+       +---- Data/experiment pack
+       +---- Future packs
+```
+
+A domain pack can add semantics without turning the core into a domain-specific workflow engine.
+
+## Structured intent model
+
+```
+Schema
+  |
+  +--> defines semantic vocabulary
+
+Recipe
+  |
+  +--> declares desired outcome/capabilities
+
+Profile
+  |
+  +--> declares characteristics and preferences
+
+Registry
+  |
+  +--> declares concrete providers/integrations/harness surfaces
+
+Resolver
+  |
+  +--> binds intent to available execution surfaces
+
+Compiler
+  |
+  +--> emits portable Execution Contract
+```
+
+The same recipe can be compiled against different profiles and provider availability without changing its semantic intent.
 
 ## Handoff
 
 ```
 Recipe
   -> Decretum
-  -> ResearchExecutionContract
-  -> External Harness Runtime
-  -> Research / Evidence Store
+  -> Execution Contract
+  -> External Harness / Agent Runtime
+  -> External Store
 ```
 
 The contract is the interoperability boundary.
 
-## Interactive loop
+## Iterative execution loop
 
-The runtime may request another experiment. If that request requires only capabilities already present in the contract, the runtime can continue according to its own execution model.
+If the runtime can satisfy the next action with capabilities already present, it remains within its own execution model.
 
-If the request requires a new capability, provider, integration, policy permission or changed execution requirement:
+If it needs a new capability, provider, integration, policy permission or changed execution requirement:
 
 ```
-Harness Runtime
+Harness / Agent
       |
       v
-Experiment / capability request
+Requirement change
       |
       v
 Decretum
@@ -60,29 +117,29 @@ Decretum
       +-- compile
       |
       v
-New ResearchExecutionContract
+New Execution Contract
       |
       v
-Harness Runtime
+Harness / Agent
 ```
 
-The harness must not silently redefine Decretum's capability semantics.
+The runtime must not silently redefine Decretum's capability semantics.
 
-## Research state
+## Contract naming
 
-Evidence, findings, hypotheses, researcher interactions and reports belong to the runtime's research store.
+The canonical conceptual contract is **Execution Contract**.
 
-Decretum may include evidence/report **requirements** in the contract, but it does not own the resulting state.
+The current security-domain implementation may retain `ResearchExecutionContract` as a compatibility representation while the contract format evolves. New domain-neutral implementations should use a domain-neutral kind and carry explicit domain/intent metadata rather than encoding the domain into the compiler boundary.
 
 ## Contribution guardrail
 
-Any feature that executes research or owns the interactive research loop belongs outside the Decretum compiler core.
+Features that execute work or own an interactive loop belong outside the Decretum compiler core.
 
 Contributors should extend:
 
-- canonical capability semantics
-- provider metadata
-- integration metadata
+- schemas and domain packs
+- canonical capabilities
+- provider/integration metadata
 - profiles
 - discovery/readiness
 - resolution
@@ -92,10 +149,11 @@ Contributors should extend:
 Harness/runtime projects should implement:
 
 - execution
-- researcher UX
+- researcher/agent UX
+- orchestration
 - evidence collection
 - finding analysis
 - reporting
-- persistent research state
+- persistent state
 
 **This boundary is intentionally frozen.**
