@@ -9,6 +9,7 @@ from typing import Any
 
 from .resolver import resolve_capabilities
 from .validator import DEFAULT_PROVIDER_REGISTRY, required_capabilities\nfrom .registry_snapshot import snapshot_registry
+from .manifest import create_manifest
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,7 +54,8 @@ def compile_recipe(
     artifact_dir: Path,
     registry_path: Path = DEFAULT_PROVIDER_REGISTRY,
 ) -> ExecutionContract:
-    registry_snapshot = snapshot_registry(registry_path, artifact_dir)\n    resolution = resolve_capabilities(recipe, registry_path)
+    registry_snapshot = snapshot_registry(registry_path, artifact_dir)
+    schema_path = Path(__file__).resolve().parent.parent / "schema" / "sec_research_metamodel.yaml"\n    resolution = resolve_capabilities(recipe, registry_path)
     steps = _experiment_steps(recipe)
     experiment_graph = {
         "steps": steps,
@@ -81,7 +83,7 @@ def compile_recipe(
     }
     plan_digest = _plan_digest(resolution_audit)
 
-    body = {
+    compilation_manifest = None\n    body = {
         "apiVersion": "decretum.dev/v1",
         "kind": "ResearchExecutionContract",
         "contract_version": "2",
@@ -134,10 +136,10 @@ def compile_recipe(
         "evidence": recipe["evidence"],
         "completion": recipe["completion"],
         "workload": recipe.get("workload", {}),
-        "reports": recipe.get("reports", []),
+        "reports": recipe.get("reports", []),\n        "compilation_manifest": {"artifact": "compilation-manifest.json"},
     }
 
-    canonical = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+    compilation_manifest = create_manifest(Path(recipe.get("_source_path", "recipe.yaml")), schema_path, registry_path, artifact_dir) if Path(recipe.get("_source_path", "recipe.yaml")).exists() else None\n    if compilation_manifest:\n        body["compilation_manifest"] = {"artifact": "compilation-manifest.json", "digest": compilation_manifest["digest"]}\n    canonical = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
     contract_id = hashlib.sha256(canonical).hexdigest()[:16]
     return ExecutionContract(
         contract_id,
