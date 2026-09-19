@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 180" role="img" aria-labelledby="title desc">
+<title id="title">Decretum logo</title><desc id="desc">A geometric D mark followed by the Decretum wordmark.</desc>
+<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#73e0b5"/><stop offset="1" stop-color="#7aa7ff"/></linearGradient></defs>
+<rect width="720" height="180" rx="36" fill="#070a0f"/>
+<path d="M48 36h46c42 0 72 22 72 54s-30 54-72 54H48V36Zm38 32v44h8c20 0 34-8 34-22s-14-22-34-22h-8Z" fill="url(#g)"/>
+<text x="190" y="113" font-family="Inter,Segoe UI,sans-serif" font-size="68" font-weight="800" letter-spacing="3" fill="#edf2f7">DECRETUM</text>
+</svg>
