@@ -357,7 +357,7 @@ Thank you to the maintainers, contributors and communities behind the open-sourc
 
 ## AI-assisted development and attribution
 
-Decretum is developed with transparent AI assistance. **Vignesh Kumar** is the human project owner, architect, maintainer, and release authority. **ChatGPT (OpenAI)** is used as an AI engineering contributor for architecture exploration, implementation, refactoring, debugging, testing guidance, documentation, and repository maintenance.
+Decretum is developed with transparent AI assistance. **Opposum0112** is the human project owner, architect, maintainer, and release authority. **codex** is used as an AI engineering contributor for architecture exploration, implementation, refactoring, debugging, testing guidance, documentation, and repository maintenance.
 
 AI assistance does not transfer project ownership or release authority to the AI system. Human review and acceptance remain part of the project workflow.
 
