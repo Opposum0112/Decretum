@@ -1,81 +1,74 @@
 # Decretum
 
-> **Describe the security research you want to perform. Decretum figures out what is available, builds a safe execution plan, and produces a reproducible research contract.**
+> **Define the security research you need. Decretum discovers execution surfaces, resolves capabilities, and compiles a portable contract for a harness to execute.**
 
 Decretum is a **harness-neutral security research compiler**.
 
-It lets a researcher describe an investigation as a portable YAML recipe instead of tying the recipe to one command, one MCP server, one agent, or one machine.
+Its core rule is:
 
-Decretum then:
+> **LinkML defines what a researcher needs. Discovery determines what can provide it. The compiler turns the request into a contract. The harness determines how it is executed.**
 
-- validates the research recipe
-- discovers available execution surfaces
-- maps capabilities to providers
-- checks provider, policy, and harness compatibility
-- selects providers and fallbacks
-- freezes the plan into an auditable contract
-- records evidence and provenance
-- supports verification and offline replay
+Decretum is not another agent runtime. Codex, Goose, Google ADK, Pi, or another compatible harness can execute the contract.
 
-**Decretum is not another agent runtime.** Codex, Goose, Google ADK, Pi, or another compatible harness can execute the contract.
+## Architecture
+
+```
+                 RESEARCHER
+                     |
+                 Recipe
+                     |
+             Capability Schema
+                     |
+          +----------+----------+
+          |                     |
+      Registry              Discovery
+          |                     |
+          +----------+----------+
+                     |
+                  Resolver
+                     |
+                  Compiler
+                     |
+          Research Execution Contract
+                     |
+                Harness Adapter
+                     |
+       +-------------+-------------+
+       |             |             |
+   Provision      Execute      Orchestrate
+       |             |             |
+       +-------------+-------------+
+                     |
+          Evidence / Findings / Report
+                     |
+              Research Store
+```
+
+### The six core pieces
+
+| Component | Responsibility |
+|---|---|
+| **Capability schema** | Canonical semantic boundary |
+| **Provider registry** | Concrete implementations and execution surfaces |
+| **Discovery** | Verifies what is available and proposes missing capabilities |
+| **Resolver/compiler** | Resolves capabilities and creates the execution contract |
+| **Harness adapter** | Provisions, implements, executes, orchestrates and interacts with the researcher |
+| **Research store** | Persists contracts, evidence, findings, reports and provenance |
+
+The important separation is:
+
+```
+Capability = what
+Provider   = implementation
+Integration = access surface
+Harness    = execution/orchestration
+```
 
 ---
 
-## Why use Decretum?
+# Quick start
 
-Without Decretum, a research workflow often becomes:
-
-```text
-Research idea
-   ↓
-Custom script
-   ↓
-Hard-coded tool
-   ↓
-Hard-coded agent
-   ↓
-Machine-specific setup
-   ↓
-Difficult to reproduce
-```
-
-With Decretum:
-
-```text
-Research question
-   ↓
-Portable recipe
-   ↓
-Capabilities
-   ↓
-Available providers
-   ↓
-Compatible execution surface
-   ↓
-Selected provider + fallback
-   ↓
-Execution contract
-   ↓
-Evidence + provenance
-   ↓
-Reproducible research
-```
-
-The important idea is simple:
-
-> **Recipes describe what the researcher needs. Providers describe how that capability can be delivered.**
-
----
-
-# 1. Quick start
-
-## Step 1 — Install
-
-Requirements:
-
-- Python 3.11+
-- uv
-- the tools/harnesses you want to use
+## 1. Install
 
 ```bash
 git clone https://github.com/Opposum0112/Decretum.git
@@ -83,202 +76,107 @@ cd Decretum
 uv sync
 ```
 
----
-
-## Step 2 — See what your machine can provide
-
-Before creating a recipe, discover the execution surfaces available on your host:
+## 2. Discover the host
 
 ```bash
 decretum capabilities discover
 ```
 
-Decretum checks registered:
+Discovery checks registered tools, APIs, MCP surfaces, integrations and harness availability.
 
-- CLI/tool providers
-- API integrations
-- MCP surfaces
-- supported agent harnesses
-- local availability
-- provider ↔ harness compatibility
+It produces:
 
-It creates:
-
-```text
+```
 artifacts/capability-discovery/
 ├── capability-surface-manifest.json
 └── capability-candidates.yaml
 ```
 
-The candidate file is created only when review is required.
-
-Example:
-
-```text
-network.capture
-
-  tshark
-    tool
-      Codex
-      Goose
-      ADK
-      READY
-
-  tcpdump
-    tool
-      Codex
-      Goose
-      READY
-
-  pcap-mcp
-    MCP
-      registered
-      not locally verified
-```
-
-**Discovery does not modify the canonical schema.**
+Discovery **never silently changes the canonical capability vocabulary**.
 
 ---
 
-# 2. Write a research recipe
+# Write a recipe
 
-Suppose you want to investigate whether a suspicious program creates unexpected network activity.
+Recipes should stay small. They describe the research objective and compose canonical capabilities into experiments.
 
-You describe the investigation, not the specific packet-capture program.
+For example:
 
 ```yaml
 id: suspicious-network-investigation
 name: Suspicious Network Investigation
 version: "1.0"
-role: malware_researcher
 
 objective: >
   Determine whether the sample creates unexpected network activity.
 
-environment:
-  type: local
-  sandbox:
-    backend: docker
-    image: security-research/sample-lab:latest
-  orchestration:
-    executor: codex
-    mode: interactive
-
-capability_catalog:
-  - id: process.observe
-    name: Observe Processes
-    kind: process
-    risk: observe
-    description: Observe process activity.
-
-  - id: network.capture
-    name: Capture Network Traffic
-    kind: network
-    risk: collect
-    description: Capture traffic produced by the experiment.
-
-skills:
-  - id: observe-runtime
-    kind: investigation
-    capabilities:
-      - process.observe
-      - network.capture
+capabilities:
+  - process.observe
+  - network.capture
+  - artifact.collect
 
 experiments:
   - id: observe-process
-    objective: Observe process activity.
+    objective: Observe process execution.
     capabilities: [process.observe]
-    outputs: [process_activity]
 
   - id: capture-network
     objective: Capture network activity.
     capabilities: [network.capture]
     depends_on: [observe-process]
-    outputs: [network_activity]
 
-policy:
-  deny: [privileged]
-  approval_required: []
-
-evidence:
-  required: true
-
-completion:
-  report: true
+  - id: preserve-results
+    objective: Preserve research evidence.
+    capabilities: [artifact.collect]
+    depends_on: [capture-network]
 ```
 
-Notice what the recipe **does not** say:
+A recipe does **not** need to describe:
 
-```text
-Run tshark
-Run tcpdump
-Start a particular MCP server
-Use a particular LLM
-Use a particular agent runtime
-```
+- Lima/Docker/Podman lifecycle
+- VM creation or teardown
+- installation commands
+- MCP server implementation
+- a particular CLI
+- a particular LLM
+- a particular agent runtime
 
-It asks for:
-
-```text
-process.observe
-network.capture
-```
-
-That is what makes the recipe portable.
+Those are execution concerns.
 
 ---
 
-# 3. Validate the recipe
-
-Run:
+# Validate
 
 ```bash
-decretum validate recipes/suspicious-network-investigation.yaml
+decretum validate recipes/<recipe>.yaml
 ```
 
-Validation checks the recipe structure and required provider registrations.
+Validation checks:
+
+- recipe structure
+- canonical capability references
+- experiment dependencies
+- policy/evidence requirements
+- registered provider coverage
 
 Nothing is executed.
 
-Think of this as:
-
-> **"Is my research request well formed?"**
-
 ---
 
-# Extensible compute providers
-
-Compute providers are **open-world LinkML identifiers**, not a hard-coded provider enum. The metamodel defines provider and lifecycle semantics through `ComputeProviderSpec`, `ProviderInterface`, `ProvisioningSpec`, `LifecycleSpec`, `EnvironmentPlan`, `TeardownSpec`, and `AnalysisSpec`.
-
-Adding a new compute provider follows this data-driven path:
-
-1. Register the provider in `schema/provider_registry.yaml`.
-2. Declare its interface, capabilities, provisioning policy, lifecycle, isolation, network, architecture, snapshot and ephemeral behavior.
-3. Discovery determines whether it is actually available.
-4. Resolution checks capability, harness, execution-surface, policy and compatibility.
-5. Compilation emits schema-shaped environment, provisioning, teardown and analysis plans.
-6. Host installation is approval-controlled; planning itself never mutates the host.
-7. Ephemeral environments can collect evidence before teardown, leaving persistent artifacts for interactive analysis.
-
-The compiler should therefore **not** contain provider-specific branches such as `if provider == "newvm"`. A future provider can be introduced through registry data that conforms to the LinkML contract.
-
-
-# 4. Resolve the recipe
-
-Run:
+# Resolve
 
 ```bash
-decretum resolve recipes/suspicious-network-investigation.yaml
+decretum resolve recipes/<recipe>.yaml
 ```
 
-The resolver checks:
+Resolution follows:
 
-```text
+```
 Recipe
   ↓
 Required capabilities
   ↓
-Registered providers
+Provider registry
   ↓
 Local readiness
   ↓
@@ -286,377 +184,146 @@ Execution surface
   ↓
 Harness compatibility
   ↓
-Policy compatibility
+Policy / compatibility
   ↓
-Provider compatibility
+Selected providers
 ```
 
-For example:
+A capability may have multiple providers:
 
-```text
+```
 network.capture
-
-  tshark
-    provider: READY
-    interface: tool
-    harness: codex
-    compatibility: PASS
-    → SELECTED
-
-  tcpdump
-    provider: READY
-    interface: tool
-    harness: codex
-    compatibility: PASS
-    → FALLBACK
-
-  pcap-mcp
-    interface: mcp
-    → NOT LOCALLY VERIFIED
+   |
+   +-- tshark       → tool
+   +-- tcpdump      → tool
+   +-- pcap-mcp     → MCP
 ```
 
-Nothing is executed.
+The compiler does not contain branches such as:
+
+```python
+if provider == "lima":
+    ...
+```
+
+Adding a provider is registry work, not compiler work.
 
 ---
 
-# 5. Compile the research contract
-
-Run:
+# Compile the execution contract
 
 ```bash
-decretum compile recipes/suspicious-network-investigation.yaml
+decretum compile recipes/<recipe>.yaml
 ```
 
-Decretum freezes the research plan into:
+The result is an auditable contract:
 
-```text
+```
 artifacts/<research-id>/
 ├── research-contract.json
 ├── provider-registry.snapshot.json
 └── compilation-manifest.json
 ```
 
-The contract contains the resolved execution plan and records what Decretum intended to run.
+The contract records:
 
-The registry snapshot preserves the provider definitions used during compilation.
+- requested capabilities
+- experiment graph
+- selected/resolved execution surfaces
+- harness
+- policy and approvals
+- evidence requirements
+- research-loop intent
+- registry snapshot
+- compilation provenance
 
-The compilation manifest records hashes of the important compilation inputs.
-
-You can now review the plan **before execution**.
+The contract deliberately does **not** turn every provider lifecycle operation into a LinkML primitive.
 
 ---
 
-# 6. Execute with your chosen harness
+# What the harness does
 
-When you are ready:
+The contract tells a harness what the researcher wants and what must be preserved.
 
-```bash
-decretum run recipes/suspicious-network-investigation.yaml --dry-run=false
+The harness is responsible for operational execution:
+
 ```
-
-The execution harness performs the research within the compiled contract boundary.
-
-Decretum does not try to replace the harness.
-
-Conceptually:
-
-```text
-Decretum
-   │
-   │ execution contract
-   ▼
+Contract
+   ↓
 Harness
-   │
-   ├── Codex
-   ├── Goose
-   ├── Google ADK
-   ├── Pi
-   └── other adapters
-        │
-        ▼
-     Research
+   ├── provision environment
+   ├── implement/resolution capabilities
+   ├── execute experiments
+   ├── orchestrate dependencies
+   ├── collect evidence
+   ├── interact with researcher
+   ├── develop findings
+   └── produce report
 ```
+
+This keeps Decretum neutral across Codex, Goose, ADK, Pi and future runtimes.
 
 ---
 
-# 7. Collect and analyze evidence
+# Persistent research knowledge
 
-After execution, continue the research session:
+Execution results belong in the research store rather than in the recipe schema.
 
-```bash
-decretum analyze <research-id> "What evidence is still missing?"
+The persistent record can contain:
+
 ```
-
-Inspect generated research state:
-
-```bash
-decretum inspect <research-id>
-```
-
-A research artifact can contain:
-
-```text
 research-contract.json
 research-session.sqlite3
 research-ledger.jsonl
 experiments/
 evidence/
+findings/
 report/
 ```
 
----
-
-# 8. Verify the research record
-
-Verify the tamper-evident ledger:
+The ledger is hash chained for tamper evidence.
 
 ```bash
 decretum verify-ledger <research-id>
 ```
 
-The ledger is hash chained so later changes can be detected.
-
-This provides **tamper evidence**, not a claim of immutable storage or protection from a fully privileged attacker.
-
----
-
-# 9. Replay the research plan
-
-Run:
+Replay is read-only:
 
 ```bash
 decretum replay artifacts/<research-id>/research-contract.json
 ```
 
-Replay is read-only.
-
-It does **not**:
-
-- execute tools
-- launch containers
-- start VMs
-- start MCP servers
-- run agents
-
-Instead it answers two different questions:
-
-```text
-Was the historical contract internally consistent?
-                         +
-Can the current environment reproduce the required surfaces?
-```
+Replay does not execute tools, containers, VMs, MCP servers or agents.
 
 ---
 
-# 10. Adding new capabilities
+# Adding a capability
 
-This is where Decretum becomes community extensible.
+Capability discovery follows:
 
-Suppose researchers need:
-
-```text
-cloud.audit.query
 ```
-
-but that capability does not exist yet.
-
-You can ask discovery to inspect a recipe containing it:
-
-```bash
-decretum capabilities discover --recipe recipes/cloud-investigation.yaml
-```
-
-Decretum can produce:
-
-```text
-CapabilityCandidate
-
-cloud.audit.query
-    status: review_required
-    providers: none
-```
-
-It deliberately does **not** invent the security meaning of the capability.
-
-The workflow is:
-
-```text
 DISCOVER
-    ↓
+   ↓
 PROPOSE
-    ↓
-DEFINE SEMANTICS
-    ↓
-VALIDATE
-    ↓
-APPROVE
-    ↓
-REGISTER PROVIDERS
-    ↓
-REGISTER INTEGRATIONS
-    ↓
-TEST
-    ↓
-COMPOSE INTO RECIPES
+   ↓
+SEMANTIC VALIDATION
+   ↓
+RESEARCHER APPROVAL
+   ↓
+CANONICAL CAPABILITY REGISTRY
 ```
 
-This distinction is important.
+For example, discovery may encounter:
 
-A locally installed executable is an **execution surface**.
-
-It is not automatically a new security capability.
-
-For example, discovering a binary named `cloud-audit-tool` does not prove what security semantics it provides.
-
-A researcher must define the capability.
-
----
-
-# 11. Approve a new capability
-
-Discovery produces candidates, not schema mutations. When a researcher decides that a new semantic action belongs in the canonical vocabulary, promote it explicitly:
-
-```bash
-decretum capabilities discover --recipe recipes/cloud-investigation.yaml
-
-decretum capabilities approve cloud.audit.query \\
-  --kind cloud \\
-  --risk read \\
-  --name "Query Cloud Audit Logs" \\
-  --description "Query cloud audit records for security investigation."
+```
+cloud.audit.query
+status: review_required
+providers: none
 ```
 
-Then inspect the recipe vocabulary:
+That does not automatically make it canonical.
 
-```bash
-decretum capabilities list
-```
-
-Promotion writes the reviewed semantic contract to `schema/capability_registry.yaml`. It does **not** invent or register a provider. Provider implementations remain explicit entries in `schema/provider_registry.yaml` and must declare how they deliver the capability.
-
-The lifecycle is therefore:
-
-```text
-Discovery candidate
-      ↓
-Researcher defines semantics
-      ↓
-Explicit approval
-      ↓
-Canonical capability registry
-      ↓
-Provider registration
-      ↓
-Recipe composition
-```
-
-Recipes can reference promoted capabilities without repeating their semantic definition. This makes the canonical registry the reusable vocabulary for the community while keeping host discovery and provider implementation separate.
-
----
-
-# 13. Capability vs provider vs integration vs harness
-
-These four concepts should stay separate.
-
-| Concept | Meaning | Example |
-|---|---|---|
-| Capability | What the researcher needs | `network.capture` |
-| Provider | Concrete implementation | tshark |
-| Integration | How the provider is reached | MCP/API/tool |
-| Harness | Agent/orchestration runtime | Codex |
-
-For example:
-
-```text
-network.capture
-       │
-       ├── tshark
-       │     └── tool
-       │
-       ├── tcpdump
-       │     └── tool
-       │
-       └── pcap-mcp
-             └── MCP
-```
-
-A recipe composes **capabilities**.
-
-The resolver chooses an appropriate **provider**.
-
-The execution system uses an **integration**.
-
-The selected **harness** performs the orchestration.
-
----
-
-# 12. Build reusable research recipes
-
-Once a capability is registered, recipes can compose it.
-
-For example:
-
-```text
-Malware investigation
-        │
-        ├── artifact.read
-        ├── process.observe
-        ├── network.capture
-        ├── filesystem.observe
-        └── memory.analyze
-```
-
-Another recipe could reuse the same capabilities:
-
-```text
-Incident investigation
-        │
-        ├── process.observe
-        ├── network.capture
-        └── artifact.collect
-```
-
-The same capability can therefore participate in many investigations.
-
-That is the foundation for a reusable security-research ecosystem.
-
----
-
-# 14. Community contributions
-
-Decretum is designed for researchers, detection engineers, threat researchers, security engineers, tool authors, and agent developers to contribute independently.
-
-You can contribute:
-
-- new capabilities
-- provider implementations
-- MCP integrations
-- API integrations
-- harness adapters
-- reusable recipes
-- tests
-- documentation
-- research workflows
-
-## Contribution types
-
-| You want to add... | Contribute... |
-|---|---|
-| A new research action | Capability |
-| Another implementation | Provider |
-| A new way to access it | Integration |
-| A reusable investigation | Recipe |
-| Agent execution support | Harness adapter |
-| Better confidence | Tests/evidence |
-| Better usability | Documentation |
-
----
-
-## A. Add a capability
-
-Add a capability when the **research action itself is new**.
-
-Example:
+The researcher defines its semantics:
 
 ```yaml
 id: cloud.audit.query
@@ -664,461 +331,191 @@ name: Query Cloud Audit Logs
 kind: cloud
 risk: read
 description: Query cloud audit records for security investigation.
-allowed_networks: [restricted, internet]
-allowed_execution_modes: [observe, collect]
-evidence_outputs: [audit_events]
 ```
 
-The important part is the semantic contract.
+Then explicitly approve it:
 
-It should describe:
-
-- what the capability means
-- what it produces
-- its risk
-- allowed execution conditions
-- compatibility expectations
-
-Avoid making the capability name a product name when the behavior is portable.
-
-Prefer:
-
-```text
-cloud.audit.query
+```bash
+decretum capabilities approve cloud.audit.query \
+  --kind cloud \
+  --risk read \
+  --name "Query Cloud Audit Logs" \
+  --description "Query cloud audit records for security investigation."
 ```
 
-over:
-
-```text
-aws.cloudtrail.query
-```
-
-when the underlying research action is the same.
+Only after approval should providers declare that they implement it.
 
 ---
 
-## B. Add a provider
+# Adding a provider
 
-A provider implements an existing capability.
+Providers are implementation metadata:
 
-For example:
+```yaml
+providers:
+  tshark:
+    interface:
+      type: tool
+      executable: tshark
+    capabilities:
+      - network.capture
 
-```text
-cloud.audit.query
-│
-├── AWS CloudTrail API
-├── Azure Monitor API
-├── GCP Audit Logs API
-└── Cloud Audit MCP
+  pcap-mcp:
+    interface:
+      type: mcp
+      server: pcap
+    capabilities:
+      - network.capture
+
+  lima:
+    interface:
+      type: api
+      endpoint: local:lima
+    capabilities:
+      - compute.vm
+      - compute.snapshot
 ```
 
-The provider should declare:
+A provider entry answers:
 
-- capabilities
-- interface
-- integration
-- readiness requirements
-- execution modes
-- isolation
-- network requirements
-- evidence outputs
+> **How can this capability currently be implemented?**
 
-Do not redefine the capability merely to make one provider fit.
+It does not redefine the semantic meaning of the capability.
+
+Compute providers such as Lima, Docker, Podman, Incus, QEMU and Firecracker are therefore just execution surfaces. Their provisioning and lifecycle remain harness/runtime implementation concerns.
 
 ---
 
-## C. Add an integration
+# Capability vs provider vs integration vs harness
 
-An integration describes how Decretum reaches a provider.
+| Concept | Question | Example |
+|---|---|---|
+| Capability | What do I need? | `network.capture` |
+| Provider | What implements it? | `tshark` |
+| Integration | How do I reach it? | `tool`, `MCP`, `API` |
+| Harness | Who executes/orchestrates? | Codex |
 
-Examples:
-
-```text
-MCP
-API
-local CLI
-container API
-VM API
-```
-
-This allows the same semantic capability to be delivered through different execution surfaces.
+This separation is the main extensibility boundary.
 
 ---
 
-## D. Add a recipe
+# Research workflow
 
-A good recipe answers:
+For researchers:
 
-1. **What are we investigating?**
-2. **Which capabilities are required?**
-3. **What experiments are performed?**
-4. **What depends on what?**
-5. **What evidence is required?**
-6. **What is denied or requires approval?**
-7. **When is the research complete?**
-
-Prefer:
-
-```text
-capability
-    ↓
-experiment
-    ↓
-evidence
+```
+1. Discover execution surfaces
+2. Reuse or propose capabilities
+3. Write a small recipe
+4. Validate
+5. Resolve
+6. Review the resolution
+7. Compile
+8. Execute through a harness
+9. Collect evidence
+10. Develop findings
+11. Produce report
+12. Persist provenance
+13. Replay later
 ```
 
-instead of:
+For contributors:
 
-```text
-recipe
-    ↓
-hard-coded command
-    ↓
-one specific machine
 ```
-
----
-
-# 15. Recommended contribution workflow
-
-### For a new capability
-
-```text
 Research need
      ↓
-Search existing capabilities
-     │
-     ├── Exists → reuse it
-     │
-     └── Missing
-           ↓
-      Define CapabilitySpec
-           ↓
-      Define semantics
-           ↓
-      Add provider(s)
-           ↓
-      Add integration(s)
-           ↓
-      Add compatibility/readiness tests
-           ↓
-      Add example recipe
-           ↓
-      Validate
-           ↓
-      Resolve
-           ↓
-      Compile
-           ↓
-      Run tests
-           ↓
-      Pull request
-```
-
-### For a new provider
-
-```text
-Existing capability
-       ↓
-Implement provider
-       ↓
-Register interface
-       ↓
-Register integration
-       ↓
-Define readiness
-       ↓
-Define compatibility
-       ↓
-Add tests
-       ↓
-Example recipe
-       ↓
-Pull request
-```
-
-### For a new recipe
-
-```text
-Research question
-       ↓
-Select existing capabilities
-       ↓
-Create experiment DAG
-       ↓
-Define evidence
-       ↓
-Define policy
-       ↓
-Validate
-       ↓
-Resolve
-       ↓
-Compile
-       ↓
-Test
-       ↓
-Pull request
+Capability semantics
+     ↓
+Canonical approval
+     ↓
+Provider implementation
+     ↓
+Integration
+     ↓
+Discovery/readiness
+     ↓
+Recipe
+     ↓
+Tests
 ```
 
 ---
 
-# 16. Before opening a PR
+# Project structure
 
-Run:
-
-```bash
-uv sync
-uv run pytest
 ```
-
-Then validate your example:
-
-```bash
-decretum capabilities discover
-decretum validate recipes/<recipe>.yaml
-decretum resolve recipes/<recipe>.yaml
-decretum compile recipes/<recipe>.yaml
-```
-
-For a new capability, include:
-
-- why an existing capability is insufficient
-- semantic definition
-- risk and execution constraints
-- provider implementation(s)
-- integration requirements
-- compatibility/readiness tests
-- example recipe
-
-For a new recipe, include:
-
-- research objective
-- capabilities
-- experiment dependencies
-- evidence expectations
-- policy boundaries
-- example usage
-
-Do not include:
-
-- credentials
-- API keys
-- private customer data
-- confidential reports
-- sensitive research artifacts
-- malware samples that should not be publicly distributed
-
----
-
-# 17. Project structure
-
-```text
 Decretum/
-│
 ├── schema/
 │   ├── sec_research_metamodel.yaml
-│   └── provider_registry.yaml
-│
+│   ├── capability_registry.yaml
+│   ├── provider_registry.yaml
+│   └── provider_registry.schema.yaml
 ├── recipes/
-│   └── reusable research recipes
-│
 ├── sec_agent/
-│   ├── validator.py
+│   ├── capability_registry.py
 │   ├── capability_discovery.py
 │   ├── resolver.py
 │   ├── compatibility.py
 │   ├── compiler.py
 │   ├── research_state.py
 │   └── replay.py
-│
-├── tests/
-│
-└── artifacts/
-    └── generated research state
+└── tests/
 ```
 
 ---
 
-# 18. The complete researcher workflow
+# Design principles
 
-For a normal user, the whole project can be understood as:
+### 1. Capability semantics are canonical
 
-```text
-1. Discover
-   ↓
-2. Choose or create capabilities
-   ↓
-3. Write a recipe
-   ↓
-4. Validate
-   ↓
-5. Resolve
-   ↓
-6. Review the selected providers
-   ↓
-7. Compile
-   ↓
-8. Execute with your preferred harness
-   ↓
-9. Collect evidence
-   ↓
-10. Analyze findings
-   ↓
-11. Verify provenance
-   ↓
-12. Replay later
-```
+The LinkML capability boundary defines stable research meaning.
 
-For contributors:
+### 2. Discovery is evidence, not ontology
 
-```text
-Research problem
-      ↓
-Capability
-      ↓
-Provider
-      ↓
-Integration
-      ↓
-Execution surface
-      ↓
-Harness compatibility
-      ↓
-Recipe
-      ↓
-Reusable research workflow
-```
+Discovery can prove that an execution surface exists. It cannot silently invent a new security capability.
+
+### 3. Recipes are compositions
+
+Recipes should describe experiments using capabilities, not encode provider lifecycle.
+
+### 4. Providers are open-world
+
+A new provider should be addable through registry data without changing compiler logic.
+
+### 5. Harnesses own execution
+
+Provisioning, implementation, orchestration, interactive research and ephemeral lifecycle belong to the execution environment.
+
+### 6. Research state is persistent
+
+Evidence, findings, reports and provenance belong in the research store, not in a growing collection of execution primitives.
+
+### 7. Reproducibility remains first-class
+
+Contracts, registry snapshots, manifests, evidence and ledger history make a research session inspectable and replayable.
 
 ---
 
-# 19. Architecture at a glance
+# Status
 
-```text
-                    RESEARCHER
-                        │
-                        ▼
-                 Research Recipe
-                        │
-                        ▼
-                  LinkML Schema
-                        │
-                        ▼
-                 Capability Model
-                        │
-                        ▼
-                Provider Registry
-                        │
-             ┌──────────┴──────────┐
-             ▼                     ▼
-        Discovery              Integrations
-             │                     │
-             └──────────┬──────────┘
-                        ▼
-                  Host Readiness
-                        │
-                        ▼
-                      Policy
-                        │
-                        ▼
-                  Compatibility
-                        │
-                        ▼
-                    Resolver
-                        │
-                        ▼
-                  Execution Plan
-                        │
-             ┌──────────┴──────────┐
-             ▼                     ▼
-        Plan Digest          Registry Snapshot
-             │                     │
-             └──────────┬──────────┘
-                        ▼
-              Compilation Manifest
-                        │
-                        ▼
-            Research Execution Contract
-                        │
-                        ▼
-                  Harness Adapter
-                        │
-             ┌──────────┼──────────┐
-             ▼          ▼          ▼
-           Codex      Goose       ADK
-             │
-             ▼
-          Experiments
-             │
-             ▼
-           Evidence
-             │
-             ▼
-          Findings
-             │
-             ▼
-      Hash-chained Ledger
-             │
-             ▼
-       Offline Replay
+Decretum is evolving toward a **simple, community-extensible, harness-neutral security research compiler**.
+
+The core model is:
+
 ```
-
----
-
-# 20. Design principles
-
-### Portable semantics
-
-Capabilities describe research actions, not products.
-
-### Harness neutrality
-
-Decretum defines the contract; agent runtimes execute it.
-
-### Discovery without ontology pollution
-
-Host discovery can identify execution surfaces, but cannot silently invent canonical security semantics.
-
-### Explicit approval
-
-New capabilities become canonical through review rather than automatic mutation.
-
-### Reproducibility
-
-The execution plan, provider registry, compilation inputs, and provenance can be inspected later.
-
-### Composability
-
-Capabilities can be reused across many recipes and combined into larger investigations.
-
-### Community extensibility
-
-Researchers can contribute capabilities, providers, integrations, recipes, tests, and adapters independently.
-
----
-
-## Status
-
-Decretum is evolving toward a **community-extensible, harness-neutral security-research compiler**.
-
-The core direction is:
-
-```text
-Portable security semantics
+Canonical capabilities
         +
 Discoverable execution surfaces
         +
-Composable research recipes
+Small research recipes
         +
-Policy-aware provider resolution
+Capability resolution
         +
 Harness-neutral execution contracts
         +
-Persistent evidence and provenance
+Persistent research knowledge
         =
 Reproducible security research
 ```
 
-The project deliberately does **not** try to replace agent runtimes such as Codex, Goose, Google ADK, or Pi.
-
-**Decretum defines what the researcher wants done. The execution ecosystem determines how it is carried out.**
+> **Decretum defines what the researcher needs. The execution ecosystem determines how it is fulfilled.**
