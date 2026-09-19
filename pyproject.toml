@@ -1,7 +1,7 @@
 [project]
 name = "decretum"
 version = "0.3.0"
-description = "Harness-neutral security research capability resolver and execution-contract compiler"
+description = "Domain-neutral declarative execution compiler for agents and harnesses"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
