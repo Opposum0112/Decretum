@@ -1,5 +1,14 @@
 # Decretum — Introduction
 
+<p align="center">
+  <img src="docs/assets/decretum-logo.svg" alt="Decretum logo" width="720">
+</p>
+
+<p align="center">
+  <img src="docs/assets/decretum-mascot.svg" alt="Decretum mascot" width="220">
+</p>
+
+
 ## What Decretum is
 
 Decretum is a **domain-neutral Declarative Execution Compiler for Agents and Harnesses**.
@@ -81,7 +90,7 @@ Store    -> persistent state
 
 This lets the same compiler model support security research, software engineering, infrastructure, data engineering, incident response, scientific experiments, and other reproducible technical workflows.
 
-## The important architecture rule
+## Architecture
 
 > **Decretum is responsible for determining what can be executed and producing a portable execution contract. It does not execute work, manage researcher/agent interaction, collect evidence, maintain findings, or generate reports.**
 
@@ -217,6 +226,14 @@ agent / harness
 - a finding engine
 - a report generator
 - a replacement for Codex, Goose, OpenCode, ADK or other harnesses
+
+## Public repository
+
+- [Architecture](ARCHITECTURE.md)
+- [Execution Contract](docs/execution-contract.md)
+- [Domain model](docs/domain-model.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
 
 ## For contributors
 
