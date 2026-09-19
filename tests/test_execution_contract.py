@@ -175,3 +175,20 @@ def test_plan_digest_is_deterministic():
     from sec_agent.compiler import _plan_digest
     plan = {"status": "ready", "capabilities": [], "failures": [], "harnesses": ["codex"], "readiness": {}, "experiment_plan": []}
     assert _plan_digest(plan) == _plan_digest(plan)
+
+
+def test_execution_provenance_binds_contract_and_plan():
+    from sec_agent.research_state import record_execution, read_events
+    root = Path("artifacts/provenance-test")
+    item = record_execution(root, "exec-1", "contract-1", "a"*64, "exp-1", "tshark", "tool", "codex")
+    assert item["contract_id"] == "contract-1"
+    assert item["plan_digest"] == "a"*64
+    assert item["provenance_digest"]
+    assert read_events(root)[0]["type"] == "execution_started"
+
+
+def test_execution_result_has_result_digest():
+    from sec_agent.research_state import record_execution_result
+    root = Path("artifacts/provenance-test-result")
+    item = record_execution_result(root, "exec-1", "completed", outputs={"evidence": ["pcap"]})
+    assert item["result_digest"]
