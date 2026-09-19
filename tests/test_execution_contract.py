@@ -45,3 +45,16 @@ def test_experiment_dag_rejects_undeclared_capability():
     from sec_agent.validator import validate_experiment_graph
     errors = validate_experiment_graph(recipe)
     assert any("undeclared capability" in error for error in errors)
+
+
+def test_registered_harness_adapter_prepares_contract():
+    from sec_agent.harness_adapters import CodexAdapter
+    recipe, errors, _ = validate_recipe(RECIPE)
+    assert not errors
+    contract = compile_recipe(recipe, Path("artifacts/test"))
+    adapter = CodexAdapter()
+    if adapter.supports(contract.contract):
+        prepared = adapter.prepare(contract.contract)
+        assert prepared["protocol"] == "decretum.dev/v1"
+        assert prepared["adapter"] == "codex"
+        assert prepared["contract_id"] == contract.contract["contract_id"]
