@@ -153,7 +153,7 @@ def compile_recipe(
         "compilation_manifest": {"artifact": "compilation-manifest.json"},
     }
 
-    source = Path(recipe.get("_source_path", "recipe.yaml"))
+    if recipe.get("domain", "security_research") == "security_research":\n        body["research_loop"] = {\n            "interactive": True,\n            "owner": "external_harness_runtime",\n            "persist_evidence": True,\n            "persist_findings": True,\n            "persist_report": True,\n        }\n\n    source = Path(recipe.get("_source_path", "recipe.yaml"))
     manifest = create_manifest(source, schema_path, registry_path, artifact_dir) if source.exists() else None
     if manifest:
         body["compilation_manifest"] = {
