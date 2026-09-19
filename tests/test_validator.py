@@ -201,3 +201,25 @@ models: {}
         encoding="utf-8",
     )
     assert validate_capability_providers(recipe, registry) == []
+
+
+def test_harness_operations_are_validated(tmp_path):
+    registry = tmp_path / "providers.yaml"
+    registry.write_text("""
+apiVersion: decretum.dev/v1
+kind: CapabilityProviderRegistry
+version: "1.0"
+providers:
+  tcpdump:
+    interface: {type: tool, executable: tcpdump}
+    capabilities: [network.capture]
+harnesses:
+  broken:
+    kind: agent
+    supported_interfaces: [tool]
+    operations: [execute, not-an-operation]
+integrations: {}
+models: {}
+""", encoding="utf-8")
+    errors = registry_errors(registry)
+    assert any("invalid operation" in error for error in errors)
