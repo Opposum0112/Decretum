@@ -193,6 +193,7 @@ classes:
       environment: {range: EnvironmentSpec}
       policy: {range: PolicySpec}
       instrumentation: {range: InstrumentationSpec}
+      compute: {range: ComputeRequirements}
       evidence: {range: EvidenceSpec}
       completion: {range: CompletionSpec}
       references: {range: ResearchReference, multivalued: true}
@@ -395,8 +396,15 @@ classes:
       deny: {range: string, multivalued: true}
       approval_required: {range: string, multivalued: true}
 
+  ComputeRequirements:
+    attributes:
+      required: {range: string, multivalued: true}
+      preferred: {range: string, multivalued: true}
+
   InstrumentationSpec:
     attributes:
+      required: {range: string, multivalued: true}
+      preferred: {range: string, multivalued: true}
       tools: {range: InstrumentationTool, multivalued: true}
       trace_flags: {range: string, multivalued: true}
       events: {range: string, multivalued: true}
