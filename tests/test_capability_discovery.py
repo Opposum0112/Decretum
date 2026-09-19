@@ -70,3 +70,30 @@ models: {}
     first = discover_capability_surfaces(registry)
     second = discover_capability_surfaces(registry)
     assert first["digest"] == second["digest"]
+
+
+def test_promoted_capability_is_recipe_composable(tmp_path):
+    from sec_agent.capability_registry import promote_capability
+    from sec_agent.validator import structural_validate
+    registry = tmp_path / "capabilities.yaml"
+    promote_capability({
+        "id": "cloud.audit.query",
+        "name": "Query Cloud Audit Logs",
+        "kind": "cloud",
+        "risk": "read",
+        "description": "Query cloud audit records for security investigation.",
+    }, registry)
+    recipe = {
+        "id": "r", "name": "r", "version": "1", "role": "cloud_security_researcher",
+        "objective": "test", "environment": {"sandbox": {"backend": "unix"}},
+        "policy": {}, "evidence": {"required": ["audit_events"]}, "completion": {},
+        "skills": [{"id": "s", "name": "s", "kind": "cloud_security", "description": "s", "capabilities": ["cloud.audit.query"]}],
+    }
+    # Patch the canonical registry used by the validator for this isolated test.
+    import sec_agent.validator as validator
+    original = validator.canonical_capabilities
+    validator.canonical_capabilities = lambda: __import__("sec_agent.capability_registry", fromlist=["canonical_capabilities"]).canonical_capabilities(registry)
+    try:
+        assert not any("unknown capability" in e for e in structural_validate(recipe))
+    finally:
+        validator.canonical_capabilities = original
