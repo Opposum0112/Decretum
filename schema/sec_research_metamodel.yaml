@@ -67,19 +67,7 @@ enums:
   EnvironmentType:
     permissible_values:
       local: {}
-  SandboxBackend:
-    permissible_values:
-      unix: {}
-      docker: {}
-      podman: {}
-      lima: {}
-      incus: {}
-      lxc: {}
-      kvm: {}
-      firecracker: {}
-      qemu: {}
-
-  # Compute providers are open-world identifiers; implementations are registered in provider_registry.yaml.
+  # Sandbox backends are open-world provider identifiers resolved through provider_registry.yaml.
 
   InstrumentationTool:
     permissible_values:
@@ -193,102 +181,27 @@ classes:
       id: {range: string, required: true}
       name: {range: string, required: true}
       version: {range: string, required: true}
-      role: {range: ResearcherRole, required: true}
+      role: {range: ResearcherRole}
       role_definition: {range: RoleSpec}
       skills: {range: SkillSpec, multivalued: true}
       skill_catalog: {range: SkillSpec, multivalued: true}
       capability_catalog: {range: CapabilitySpec, multivalued: true}
       objective: {range: string, required: true}
       inputs: {range: InputSpec}
-      environment: {range: EnvironmentSpec, required: true}
-      policy: {range: PolicySpec, required: true}
+      capabilities: {range: string, multivalued: true}
+      experiments: {range: ExperimentStep, multivalued: true}
+      environment: {range: EnvironmentSpec}
+      policy: {range: PolicySpec}
       instrumentation: {range: InstrumentationSpec}
-      evidence: {range: EvidenceSpec, required: true}
-      completion: {range: CompletionSpec, required: true}
+      evidence: {range: EvidenceSpec}
+      completion: {range: CompletionSpec}
       references: {range: ResearchReference, multivalued: true}
       persistent_findings: {range: PersistentFinding, multivalued: true}
       workload: {range: WorkloadSpec}
       reports: {range: ReportSpec, multivalued: true}
       hypotheses: {range: Hypothesis, multivalued: true}
       experiment_requests: {range: ExperimentRequest, multivalued: true}
-      findings: {range: ResearchFinding, multivalued: true}\n      experiments: {range: ExperimentStep, multivalued: true}
-
-  ComputeProviderSpec:
-    attributes:
-      id: {range: string, required: true}
-      name: {range: string, required: true}
-      kind: {range: string, required: true}
-      capabilities: {range: string, multivalued: true}
-      interfaces: {range: ProviderInterface, multivalued: true}
-      provisioning: {range: ProvisioningSpec}
-      lifecycle: {range: LifecycleSpec}
-      isolation: {range: string}
-      network: {range: string}
-      architectures: {range: string, multivalued: true}
-      supports_snapshot: {range: boolean, ifabsent: false}
-      supports_ephemeral: {range: boolean, ifabsent: true}
-
-  ProviderInterface:
-    attributes:
-      type: {range: string, required: true}
-      executable: {range: string}
-      endpoint: {range: string}
-      server: {range: string}
-
-  ProvisioningSpec:
-    attributes:
-      installable: {range: boolean, ifabsent: false}
-      executable: {range: string}
-      installer: {range: string}
-      packages: {range: string, multivalued: true}
-      requirements: {range: string, multivalued: true}
-      installation_policy: {range: string, ifabsent: approval_required}
-      approval_required: {range: boolean, ifabsent: true}
-
-  LifecycleSpec:
-    attributes:
-      create: {range: string}
-      prepare: {range: string}
-      start: {range: string}
-      stop: {range: string}
-      destroy: {range: string}
-      snapshot: {range: string}
-      collect_before_destroy: {range: boolean, ifabsent: true}
-
-  ProvisioningPlan:
-    attributes:
-      provider: {range: string, required: true}
-      status: {range: string, required: true}
-      prerequisites: {range: string, multivalued: true}
-      installation_required: {range: boolean, ifabsent: false}
-      approval_required: {range: boolean, ifabsent: true}
-      actions: {range: string, multivalued: true}
-
-  EnvironmentPlan:
-    attributes:
-      provider: {range: string, required: true}
-      compute: {range: ComputeSpec}
-      sandbox: {range: SandboxSpec}
-      provisioning: {range: ProvisioningPlan}
-      isolation: {range: string}
-      network: {range: string}
-      ephemeral: {range: boolean, ifabsent: true}
-
-  TeardownSpec:
-    attributes:
-      enabled: {range: boolean, ifabsent: true}
-      destroy_ephemeral: {range: boolean, ifabsent: true}
-      collect_evidence_first: {range: boolean, ifabsent: true}
-      retain_workspace: {range: boolean, ifabsent: false}
-
-  AnalysisSpec:
-    attributes:
-      enabled: {range: boolean, ifabsent: true}
-      interactive: {range: boolean, ifabsent: true}
-      inputs: {range: string, multivalued: true}
-      analyzers: {range: string, multivalued: true}
-      findings: {range: string, multivalued: true}
-      report_formats: {range: ReportFormat, multivalued: true}
+      findings: {range: ResearchFinding, multivalued: true}      experiments: {range: ExperimentStep, multivalued: true}
 
   CapabilitySpec:
     attributes:
@@ -339,9 +252,6 @@ classes:
       type: {range: EnvironmentType, ifabsent: local}
       compute: {range: ComputeSpec}
       sandbox: {range: SandboxSpec, required: true}
-      environment_plan: {range: EnvironmentPlan}
-      teardown: {range: TeardownSpec}
-      analysis: {range: AnalysisSpec}
       network: {range: NetworkSpec}
       privileged: {range: boolean, ifabsent: false}
       programmatic_tool_calling: {range: boolean, ifabsent: true}
@@ -465,7 +375,7 @@ classes:
 
   SandboxSpec:
     attributes:
-      backend: {range: SandboxBackend, required: true}
+      backend: {range: string, required: true}
       image: {range: string}
       workspace_directory: {range: string}
       inherit_host_environment: {range: boolean, ifabsent: false}
