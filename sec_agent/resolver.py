@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .readiness import assess_readiness
+from .readiness import assess_readiness\nfrom .policy import annotate_provider, plan_step
 from .validator import DEFAULT_PROVIDER_REGISTRY, load_provider_registry, provider_capability_index, registry_errors
 
 
@@ -96,7 +96,7 @@ def resolve_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_P
         else sorted(harnesses)
     )
 
-    capabilities = []
+    specs = _capability_specs(recipe)\n    capabilities = []
     capability_map = {}
     for cap in sorted(_required(recipe)):
         candidates = []
@@ -109,7 +109,7 @@ def resolve_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_P
                 h for h in harness_candidates
                 if interface.get("type") in (harnesses.get(h, {}).get("supported_interfaces", []) or [])
             ]
-            candidates.append({
+            candidate = {
                 "provider": pid,
                 "interface": interface.get("type"),
                 "ready": ready and bool(supported),
@@ -126,7 +126,7 @@ def resolve_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_P
         capabilities.append(item)
         capability_map[cap] = item
 
-    steps = [_resolve_step(step, capability_map) for step in recipe.get("experiments", []) or []]
+    steps = [plan_step(step, capability_map, recipe, specs) for step in recipe.get("experiments", []) or []]
     global_failures = [
         {"capability": item["capability"], "reason": "no ready provider"}
         for item in capabilities if item["status"] != "ready"
