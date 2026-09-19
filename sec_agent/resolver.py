@@ -40,6 +40,22 @@ def _required(recipe: dict[str, Any]) -> set[str]:
     return required
 
 
+def _required_harness_operations(recipe: dict[str, Any]) -> set[str]:
+    """Return operations the selected harness must be able to perform for this contract."""
+    operations = {"implement_capabilities", "execute", "orchestrate", "collect_evidence", "researcher_interaction"}
+    compute = recipe.get("compute") or {}
+    if isinstance(compute, dict) and compute.get("required"):
+        operations.add("provision")
+    return operations
+
+
+def _harness_compatibility(harness_id: str, harnesses: dict[str, Any], required: set[str]) -> dict[str, Any]:
+    spec = harnesses.get(harness_id, {}) or {}
+    available_ops = set(spec.get("operations", []) or [])
+    missing = sorted(required - available_ops)
+    return {"harness": harness_id, "compatible": not missing, "required_operations": sorted(required), "missing_operations": missing}
+
+
 def _candidate_rank(candidate: dict[str, Any]) -> tuple[int, int, int, str]:
     """Prefer preferred providers, then ready local/tool paths, deterministically."""
     interface_rank = {"tool": 0, "api": 1, "mcp": 2}.get(candidate.get("interface"), 9)
@@ -80,7 +96,8 @@ def resolve_capabilities(
         preferred_providers.update(instrumentation.get("preferred", []) or [])
     if isinstance(compute, dict):
         preferred_providers.update(compute.get("preferred", []) or [])
-    specs = {
+    required_harness_operations = _required_harness_operations(recipe)
+    harness_checks = {\n        h: _harness_compatibility(h, harnesses, required_harness_operations)\n        for h in harness_candidates\n    }\n    harness_candidates = [h for h in harness_candidates if harness_checks[h]["compatible"]]\n\n    specs = {
         item["id"]: item
         for item in (recipe.get("capability_catalog", []) or [])
         if isinstance(item, dict) and item.get("id")
@@ -111,7 +128,7 @@ def resolve_capabilities(
                 "preferred": pid in preferred_providers,
                 "ready": provider_ready and bool(supported) and surface_ready and compat["compatible"],
                 "provider_ready": provider_ready,
-                "harnesses": supported,
+                "harnesses": supported,\n                "harness_compatibility": {h: harness_checks[h] for h in supported},
                 "integrations": provider.get("integrations", []) or [],
                 "readiness": readiness_item.get("checks", []),
                 "execution_surface": surface,
@@ -150,7 +167,7 @@ def resolve_capabilities(
             {"experiment": s["id"], "failures": s["failures"]}
             for s in steps if s["failures"]
         ],
-        "harnesses": harness_candidates,
+        "harnesses": harness_candidates,\n        "harness_requirements": sorted(required_harness_operations),\n        "harness_checks": harness_checks,
         "provider_preferences": {
             "instrumentation": (instrumentation.get("preferred", []) or []) if isinstance(instrumentation, dict) else [],
             "compute": (compute.get("preferred", []) or []) if isinstance(compute, dict) else [],
