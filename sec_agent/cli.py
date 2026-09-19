@@ -18,7 +18,7 @@ from .compiler import compile_recipe, write_contract
 from .resolver import resolve_capabilities
 from .validator import validate_recipe
 
-app = typer.Typer(help="Decretum: harness-neutral security research compiler")
+app = typer.Typer(help="Decretum: domain-neutral declarative execution compiler")
 capabilities_app = typer.Typer(help="Discover and inspect capability execution surfaces.")
 app.add_typer(capabilities_app, name="capabilities")
 console = Console()
