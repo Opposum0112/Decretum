@@ -29,6 +29,21 @@ providers:
   sysdig:
     interface: {type: tool, executable: sysdig}
     capabilities: [process.observe, filesystem.observe, network.observe, syscall.observe, container.observe]
+  tracee:
+    interface: {type: tool, executable: tracee}
+    capabilities: [process.observe, syscall.observe, filesystem.observe, network.observe, container.observe]
+  bpftrace:
+    interface: {type: tool, executable: bpftrace}
+    capabilities: [process.observe, syscall.observe, filesystem.observe, network.observe, kernel.trace]
+  bpftool:
+    interface: {type: tool, executable: bpftool}
+    capabilities: [kernel.trace, syscall.observe]
+  perf:
+    interface: {type: tool, executable: perf}
+    capabilities: [process.observe, syscall.observe, kernel.trace]
+  dumpcap:
+    interface: {type: tool, executable: dumpcap}
+    capabilities: [network.capture, network.observe]
   falco:
     interface: {type: api, endpoint: local:falco}
     capabilities: [process.observe, filesystem.observe, network.observe, syscall.observe, container.observe, detection.observe]
@@ -67,6 +82,27 @@ providers:
   firecracker:
     interface: {type: tool, executable: firecracker}
     capabilities: [compute.microvm, compute.snapshot]
+  libvirt:
+    interface: {type: api, endpoint: local:libvirt}
+    capabilities: [compute.vm, compute.snapshot, workspace.execute]
+    isolation: vm
+    network: isolated
+    architectures: [amd64, arm64]
+    supports_snapshot: true
+    supports_ephemeral: true
+  multipass:
+    interface: {type: api, endpoint: local:multipass}
+    capabilities: [compute.vm, compute.snapshot, workspace.execute]
+    isolation: vm
+    network: isolated
+    architectures: [amd64, arm64]
+    supports_snapshot: true
+    supports_ephemeral: true
+  vagrant:
+    interface: {type: tool, executable: vagrant}
+    capabilities: [compute.vm, workspace.execute]
+    isolation: vm
+    network: isolated
   volatility:
     interface: {type: tool, executable: volatility}
     capabilities: [memory.acquire, memory.analyze]
