@@ -1,6 +1,6 @@
-id: https://decretum.dev/schema/security-research
-name: security_research_metamodel
-title: Decretum Security Research Metamodel
+id: https://decretum.dev/schema/security-research-reference
+name: security_research_reference_metamodel
+title: Decretum Security Research Reference Metamodel
 license: MIT
 definition_uri_prefixes:
   sec: https://decretum.dev/schema/
