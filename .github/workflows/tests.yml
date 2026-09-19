@@ -18,6 +18,15 @@ jobs:
       - name: Install dependencies
         run: uv sync --group dev
       - name: Run tests
-        run: uv run pytest
+        shell: bash
+        run: |
+          set -o pipefail
+          uv run pytest -q 2>&1 | tee pytest.log
       - name: Lint
         run: uv run ruff check .
+      - name: Upload validation log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-log
+          path: pytest.log
