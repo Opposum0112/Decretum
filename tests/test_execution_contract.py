@@ -192,3 +192,25 @@ def test_execution_result_has_result_digest():
     root = Path("artifacts/provenance-test-result")
     item = record_execution_result(root, "exec-1", "completed", outputs={"evidence": ["pcap"]})
     assert item["result_digest"]
+
+
+def test_ledger_hash_chain_verifies():
+    from sec_agent.research_state import append_event, verify_ledger
+    root = Path("artifacts/ledger-test")
+    append_event(root, "one", {"value": 1})
+    append_event(root, "two", {"value": 2})
+    result = verify_ledger(root)
+    assert result["valid"] is True
+    assert result["events"] == 2
+
+
+def test_ledger_tampering_is_detected():
+    from sec_agent.research_state import append_event, verify_ledger
+    root = Path("artifacts/ledger-tamper-test")
+    append_event(root, "one", {"value": 1})
+    append_event(root, "two", {"value": 2})
+    path = root / "research-ledger.jsonl"
+    lines = path.read_text(encoding="utf-8").splitlines()
+    lines[0] = lines[0].replace('"value": 1', '"value": 999')
+    path.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+    assert verify_ledger(root)["valid"] is False
