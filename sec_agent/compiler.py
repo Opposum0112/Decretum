@@ -63,12 +63,25 @@ def compile_recipe(recipe: dict[str, Any], artifact_dir: Path, registry_path: Pa
         "capabilities": resolution.get("capabilities", []),
         "failures": resolution.get("failures", []),
         "harnesses": resolution.get("harnesses", []),
+        "provider_preferences": resolution.get("provider_preferences", {}),
         "readiness": resolution.get("readiness", {}),
         "execution_surfaces": resolution.get("execution_surfaces", []),
         "experiment_plan": execution_plan,
     }
     plan_digest = _plan_digest(resolution_audit)
     harness = ((recipe.get("environment") or {}).get("orchestration") or {}).get("executor", "codex")
+    instrumentation = recipe.get("instrumentation") or {}
+    compute = recipe.get("compute") or {}
+    requirements = {
+        "instrumentation": {
+            "required": sorted(instrumentation.get("required", []) or []) if isinstance(instrumentation, dict) else [],
+            "preferred": sorted(instrumentation.get("preferred", []) or []) if isinstance(instrumentation, dict) else [],
+        },
+        "compute": {
+            "required": sorted(compute.get("required", []) or []) if isinstance(compute, dict) else [],
+            "preferred": sorted(compute.get("preferred", []) or []) if isinstance(compute, dict) else [],
+        },
+    }
     body: dict[str, Any] = {
         "apiVersion": "decretum.dev/v1",
         "kind": "ResearchExecutionContract",
@@ -76,6 +89,7 @@ def compile_recipe(recipe: dict[str, Any], artifact_dir: Path, registry_path: Pa
         "contract_id": "",
         "research": {"id": recipe["id"], "name": recipe["name"], "version": recipe["version"], "objective": recipe["objective"]},
         "capabilities": sorted(required_capabilities(recipe, registry_path)),
+        "requirements": requirements,
         "experiment_graph": experiment_graph,
         "execution": {
             "harness": harness,
