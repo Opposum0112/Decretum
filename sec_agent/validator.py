@@ -129,7 +129,10 @@ def load_recipe(path: Path) -> dict[str, Any]:
 
 def structural_validate(recipe: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    required = {"id", "name", "version", "role", "objective", "policy", "evidence", "completion"}
+    domain = recipe.get("domain", "security_research")
+    required = {"id", "name", "version", "objective"}
+    if domain == "security_research":
+        required.update({"role", "policy", "evidence", "completion"})
     errors.extend(f"missing required field: {key}" for key in sorted(required - recipe.keys()))
     if recipe.get("role") not in ROLE_VALUES:
         errors.append(f"invalid role: {recipe.get('role')!r}")
