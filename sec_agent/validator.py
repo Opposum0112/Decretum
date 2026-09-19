@@ -17,6 +17,7 @@ from functools import lru_cache
 from .capability_registry import canonical_capabilities
 
 PROVIDER_INTERFACE_TYPES = {"mcp", "api", "tool"}
+HARNESS_OPERATIONS = {"provision", "implement_capabilities", "execute", "orchestrate", "collect_evidence", "researcher_interaction"}
 DEFAULT_PROVIDER_REGISTRY = Path(__file__).resolve().parents[1] / "schema" / "provider_registry.yaml"
 @lru_cache(maxsize=8)
 def load_provider_registry(path: str) -> dict[str, Any]:
@@ -156,6 +157,13 @@ def registry_errors(registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str
         for interface in harness.get("supported_interfaces", []) or []:
             if interface not in PROVIDER_INTERFACE_TYPES:
                 errors.append(f"harness {harness_id!r} has invalid interface {interface!r}")
+        operations = harness.get("operations", [])
+        if not isinstance(operations, list) or not operations:
+            errors.append(f"harness {harness_id!r} requires non-empty operations")
+        else:
+            for operation in operations:
+                if operation not in HARNESS_OPERATIONS:
+                    errors.append(f"harness {harness_id!r} has invalid operation {operation!r}")
     for model_id, model in (registry.get("models", {}) or {}).items():
         if not isinstance(model, dict) or model.get("kind") != "llm":
             errors.append(f"model {model_id!r} must have kind 'llm'")
