@@ -21,7 +21,8 @@ def test_compiler_produces_deterministic_contract():
     a = compile_recipe(recipe, Path("artifacts/test"))
     b = compile_recipe(recipe, Path("artifacts/test"))
     assert a.contract_id == b.contract_id
-    assert a.contract["kind"] == "ExecutionContract"\n    assert a.contract["domain"] == "security_research"
+    assert a.contract["kind"] == "ExecutionContract"
+    assert a.contract["domain"] == "security_research"
     assert "process.execute" in a.contract["capabilities"]
 
 
