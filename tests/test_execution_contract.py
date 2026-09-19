@@ -68,3 +68,13 @@ def test_runtime_discovery_is_ephemeral():
     assert set(result) == {"tools", "harnesses", "compute"}
     assert "docker" in result["compute"]
     assert "codex" in result["harnesses"]
+
+
+def test_readiness_report_is_ephemeral():
+    from sec_agent.readiness import assess_readiness
+    from sec_agent.validator import load_provider_registry, DEFAULT_PROVIDER_REGISTRY
+    registry = load_provider_registry(str(DEFAULT_PROVIDER_REGISTRY))
+    result = assess_readiness(registry)
+    assert "providers" in result and "models" in result and "runtime" in result
+    assert "tcpdump" in result["providers"]
+    assert "openai" in result["models"]
