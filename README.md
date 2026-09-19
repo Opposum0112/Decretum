@@ -495,7 +495,49 @@ A researcher must define the capability.
 
 ---
 
-# 11. Capability vs provider vs integration vs harness
+# 11. Approve a new capability
+
+Discovery produces candidates, not schema mutations. When a researcher decides that a new semantic action belongs in the canonical vocabulary, promote it explicitly:
+
+```bash
+decretum capabilities discover --recipe recipes/cloud-investigation.yaml
+
+decretum capabilities approve cloud.audit.query \\
+  --kind cloud \\
+  --risk read \\
+  --name "Query Cloud Audit Logs" \\
+  --description "Query cloud audit records for security investigation."
+```
+
+Then inspect the recipe vocabulary:
+
+```bash
+decretum capabilities list
+```
+
+Promotion writes the reviewed semantic contract to `schema/capability_registry.yaml`. It does **not** invent or register a provider. Provider implementations remain explicit entries in `schema/provider_registry.yaml` and must declare how they deliver the capability.
+
+The lifecycle is therefore:
+
+```text
+Discovery candidate
+      ↓
+Researcher defines semantics
+      ↓
+Explicit approval
+      ↓
+Canonical capability registry
+      ↓
+Provider registration
+      ↓
+Recipe composition
+```
+
+Recipes can reference promoted capabilities without repeating their semantic definition. This makes the canonical registry the reusable vocabulary for the community while keeping host discovery and provider implementation separate.
+
+---
+
+# 13. Capability vs provider vs integration vs harness
 
 These four concepts should stay separate.
 
@@ -563,7 +605,7 @@ That is the foundation for a reusable security-research ecosystem.
 
 ---
 
-# 13. Community contributions
+# 14. Community contributions
 
 Decretum is designed for researchers, detection engineers, threat researchers, security engineers, tool authors, and agent developers to contribute independently.
 
@@ -720,7 +762,7 @@ one specific machine
 
 ---
 
-# 14. Recommended contribution workflow
+# 15. Recommended contribution workflow
 
 ### For a new capability
 
@@ -804,7 +846,7 @@ Pull request
 
 ---
 
-# 15. Before opening a PR
+# 16. Before opening a PR
 
 Run:
 
@@ -852,7 +894,7 @@ Do not include:
 
 ---
 
-# 16. Project structure
+# 17. Project structure
 
 ```text
 Decretum/
@@ -881,7 +923,7 @@ Decretum/
 
 ---
 
-# 17. The complete researcher workflow
+# 18. The complete researcher workflow
 
 For a normal user, the whole project can be understood as:
 
@@ -933,7 +975,7 @@ Reusable research workflow
 
 ---
 
-# 18. Architecture at a glance
+# 19. Architecture at a glance
 
 ```text
                     RESEARCHER
@@ -1006,7 +1048,7 @@ Reusable research workflow
 
 ---
 
-# 19. Design principles
+# 20. Design principles
 
 ### Portable semantics
 
