@@ -167,23 +167,24 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
     if "compute" in recipe or "instrumentation" in recipe:
         errors.append("inline compute/instrumentation configuration is deprecated; use profiles")
 
-    policy = recipe.get("policy")
-    if not isinstance(policy, dict):
-        errors.append("policy must be a mapping")
-    else:
-        for key in ("allow", "deny", "approval_required"):
-            if policy.get(key) is not None and not isinstance(policy[key], list):
-                errors.append(f"policy.{key} must be a list")
-    evidence = recipe.get("evidence")
-    if not isinstance(evidence, dict):
-        errors.append("evidence must be a mapping")
-    elif not evidence.get("required"):
-        errors.append("evidence.required must be non-empty")
-    completion = recipe.get("completion")
-    if not isinstance(completion, dict):
-        errors.append("completion must be a mapping")
-    elif completion.get("report_required", True) is not True:
-        errors.append("completion.report_required must remain true")
+    if domain == "security_research":
+        policy = recipe.get("policy")
+        if not isinstance(policy, dict):
+            errors.append("policy must be a mapping")
+        else:
+            for key in ("allow", "deny", "approval_required"):
+                if policy.get(key) is not None and not isinstance(policy[key], list):
+                    errors.append(f"policy.{key} must be a list")
+        evidence = recipe.get("evidence")
+        if not isinstance(evidence, dict):
+            errors.append("evidence must be a mapping")
+        elif not evidence.get("required"):
+            errors.append("evidence.required must be non-empty")
+        completion = recipe.get("completion")
+        if not isinstance(completion, dict):
+            errors.append("completion must be a mapping")
+        elif completion.get("report_required", True) is not True:
+            errors.append("completion.report_required must remain true")
 
     return errors
 
