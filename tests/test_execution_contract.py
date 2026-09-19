@@ -228,3 +228,25 @@ def test_replay_detects_plan_tampering():
     from sec_agent.replay import verify_plan_digest
     contract = {"plan_digest": "a"*64, "resolution": {"status": "ready", "capabilities": [], "failures": [], "harnesses": [], "readiness": {}, "experiment_plan": []}}
     assert verify_plan_digest(contract)["valid"] is False
+
+
+def test_registry_snapshot_round_trip(tmp_path):
+    from sec_agent.registry_snapshot import snapshot_registry, load_snapshot
+    from sec_agent.validator import DEFAULT_PROVIDER_REGISTRY
+    snapshot = snapshot_registry(DEFAULT_PROVIDER_REGISTRY, tmp_path)
+    loaded = load_snapshot(tmp_path / "provider-registry.snapshot.json")
+    assert loaded["digest"] == snapshot["digest"]
+
+
+def test_registry_snapshot_tampering_is_detected(tmp_path):
+    from sec_agent.registry_snapshot import snapshot_registry, load_snapshot
+    from sec_agent.validator import DEFAULT_PROVIDER_REGISTRY
+    snapshot_registry(DEFAULT_PROVIDER_REGISTRY, tmp_path)
+    path = tmp_path / "provider-registry.snapshot.json"
+    data = path.read_text(encoding="utf-8").replace('"version": "1.1"', '"version": "tampered"')
+    path.write_text(data, encoding="utf-8")
+    try:
+        load_snapshot(path)
+        assert False, "tampering should be detected"
+    except ValueError:
+        pass
