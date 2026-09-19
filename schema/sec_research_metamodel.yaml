@@ -201,7 +201,7 @@ classes:
       reports: {range: ReportSpec, multivalued: true}
       hypotheses: {range: Hypothesis, multivalued: true}
       experiment_requests: {range: ExperimentRequest, multivalued: true}
-      findings: {range: ResearchFinding, multivalued: true}      experiments: {range: ExperimentStep, multivalued: true}
+      findings: {range: ResearchFinding, multivalued: true}
 
   CapabilitySpec:
     attributes:
