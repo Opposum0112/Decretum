@@ -1,24 +1,26 @@
 """Local-only LinkML-aligned recipe validation."""
 from __future__ import annotations
+
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
+
 import yaml
+
+from .capability_registry import canonical_capabilities
+from .profile_registry import DEFAULT_PROFILE_REGISTRY, load_profile_registry, validate_recipe_profiles
 
 ROLE_VALUES = {"threat_researcher", "supply_chain_auditor", "detection_engineer", "vulnerability_exploit_researcher", "malware_researcher", "threat_intelligence_researcher", "cloud_security_researcher", "forensics_researcher", "vulnerability_researcher", "security_architect"}
 SKILL_KINDS = {"analysis", "investigation", "detection", "forensics", "threat_intelligence", "malware_analysis", "vulnerability_research", "cloud_security", "reverse_engineering", "network_analysis", "software_supply_chain", "reporting"}
 SKILL_EXECUTION_MODES = {"codex_native", "shell", "mcp", "script", "analyst_review"}
 TOOLS = {"sysdig", "falco", "tracee", "tetragon", "bpftrace", "bcc", "libbpf", "ebpf_exporter", "strace", "ltrace", "perf", "ftrace", "auditd", "auditbeat", "osquery", "procmon", "psutil", "tcpdump", "tshark", "dumpcap", "wireshark", "zeek", "suricata", "snort", "netsniff_ng", "conntrack", "nftables", "iptables", "ethtool", "ss", "ip", "dig", "resolvectl", "bpftool", "pahole", "opensnoop", "execsnoop", "tcpconnect", "tcplife", "filetop", "biolatency", "runqlat", "funccount", "openssl_trace", "volatility", "rekall", "yara", "clamav", "ghidra", "radare2", "binwalk", "strings", "readelf", "objdump", "lsof", "nsenter", "capsh", "unshare"}
-CAPABILITY_KINDS = {"artifact", "filesystem", "process", "network", "identity", "cloud", "container", "instrumentation", "analysis", "reporting"}
+CAPABILITY_KINDS = {"artifact", "filesystem", "process", "network", "identity", "cloud", "container", "instrumentation", "analysis", "reporting", "compute"}
 CAPABILITY_RISKS = {"read", "observe", "collect", "execute", "write", "privileged", "network_access"}
-
-
-
-from functools import lru_cache
-from .capability_registry import canonical_capabilities
 
 PROVIDER_INTERFACE_TYPES = {"mcp", "api", "tool"}
 HARNESS_OPERATIONS = {"provision", "implement_capabilities", "execute", "orchestrate", "collect_evidence", "researcher_interaction"}
 DEFAULT_PROVIDER_REGISTRY = Path(__file__).resolve().parents[1] / "schema" / "provider_registry.yaml"
+
 @lru_cache(maxsize=8)
 def load_provider_registry(path: str) -> dict[str, Any]:
     registry = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
@@ -40,6 +42,9 @@ def validate_provider_registry(registry: dict[str, Any]) -> list[str]:
         capabilities = provider.get("capabilities")
         if not isinstance(capabilities, list) or not capabilities:
             errors.append(f"provider {provider_id!r} requires non-empty capabilities")
+        for capability in capabilities or []:
+            if capability not in canonical_capabilities():
+                errors.append(f"provider {provider_id!r} advertises non-canonical capability {capability!r}")
     return errors
 
 def provider_capability_index(registry: dict[str, Any]) -> dict[str, list[str]]:
@@ -49,91 +54,36 @@ def provider_capability_index(registry: dict[str, Any]) -> dict[str, list[str]]:
             index.setdefault(capability, []).append(provider_id)
     return index
 
-
-def _requirement_lists(recipe: dict[str, Any]) -> tuple[list[str], list[str], list[str], list[str]]:
-    """Return required/preferred instrumentation and compute provider hints."""
-    instrumentation = recipe.get("instrumentation") or {}
-    compute = recipe.get("compute") or {}
-    return (
-        list(instrumentation.get("required", []) or []) if isinstance(instrumentation, dict) else [],
-        list(instrumentation.get("preferred", []) or []) if isinstance(instrumentation, dict) else [],
-        list(compute.get("required", []) or []) if isinstance(compute, dict) else [],
-        list(compute.get("preferred", []) or []) if isinstance(compute, dict) else [],
-    )
-
-
 def required_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> set[str]:
-    """Return the capability closure, including recipe-level instrumentation/compute requirements."""
     required = set(recipe.get("capabilities", []) or [])
-    instrumentation_required, _, compute_required, _ = _requirement_lists(recipe)
-    required.update(instrumentation_required)
-    required.update(compute_required)
-    if (recipe.get("workload") or {}).get("command"):
-        required.add("process.execute")
+    for step in recipe.get("experiments", []) or []:
+        required.update(step.get("capabilities", []) or [])
+        if step.get("capability"):
+            required.add(step["capability"])
     for skill in recipe.get("skills", []) or []:
         if isinstance(skill, dict):
             required.update(skill.get("capabilities", []) or [])
     role = recipe.get("role_definition") or {}
     if isinstance(role, dict):
         required.update(role.get("default_capabilities", []) or [])
-    for step in recipe.get("experiments", []) or []:
-        required.update(step.get("capabilities", []) or [])
-        if step.get("capability"):
-            required.add(step["capability"])
-    environment = recipe.get("environment") or {}
-    for key in ("compute", "sandbox"):
-        section = environment.get(key) or {}
-        provider_id = section.get("provider") or section.get("backend")
-        if provider_id:
-            registry = load_provider_registry(str(registry_path))
-            provider = (registry.get("providers", {}) or {}).get(provider_id, {})
-            required.update(provider.get("capabilities", []) or [])
+    if (recipe.get("workload") or {}).get("command"):
+        required.add("process.execute")
     return required
 
-def _validate_requirement_preferences(recipe: dict[str, Any], registry: dict[str, Any]) -> list[str]:
-    errors: list[str] = []
-    providers = registry.get("providers", {}) or {}
-    instrumentation_required, instrumentation_preferred, compute_required, compute_preferred = _requirement_lists(recipe)
-    for label, values in (("instrumentation.required", instrumentation_required), ("instrumentation.preferred", instrumentation_preferred), ("compute.required", compute_required), ("compute.preferred", compute_preferred)):
-        if not all(isinstance(v, str) and v for v in values):
-            errors.append(f"{label} must contain non-empty strings")
-    for provider_id in instrumentation_preferred + compute_preferred:
-        if provider_id not in providers:
-            errors.append(f"preferred provider {provider_id!r} is not registered")
-    for label, required_caps, preferred in (("instrumentation", instrumentation_required, instrumentation_preferred), ("compute", compute_required, compute_preferred)):
-        for provider_id in preferred:
-            advertised = set((providers.get(provider_id, {}) or {}).get("capabilities", []) or [])
-            if required_caps and not advertised.intersection(required_caps):
-                errors.append(f"preferred {label} provider {provider_id!r} does not advertise any required capability")
-    return errors
-
 def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str]:
-    """Fail compilation when a declared/required capability has no provider."""
     try:
         registry = load_provider_registry(str(registry_path))
     except (OSError, ValueError, yaml.YAMLError) as exc:
         return [f"provider registry unavailable: {exc}"]
     errors = registry_errors(registry_path)
-    if errors:
-        return errors
-    index = provider_capability_index(registry)
-    errors.extend(_validate_requirement_preferences(recipe, registry))
     required = required_capabilities(recipe, registry_path)
-    for skill in recipe.get("skills", []) or []:
-        if isinstance(skill, dict):
-            required.update(skill.get("capabilities", []) or [])
-    role = recipe.get("role_definition") or {}
-    if isinstance(role, dict):
-        required.update(role.get("default_capabilities", []) or [])
-
+    index = provider_capability_index(registry)
     for capability in sorted(required):
         if capability and capability not in index:
             errors.append(f"capability {capability!r} has no registered provider (MCP/API/tool)")
     return errors
 
-
 def registry_errors(registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str]:
-    """Validate the complete provider/harness/integration/model registry."""
     try:
         registry = load_provider_registry(str(registry_path))
     except (OSError, ValueError, yaml.YAMLError) as exc:
@@ -170,110 +120,95 @@ def registry_errors(registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str
     return errors
 
 def load_recipe(path: Path) -> dict[str, Any]:
-    if not path.is_file(): raise FileNotFoundError(path)
+    if not path.is_file():
+        raise FileNotFoundError(path)
     value = yaml.safe_load(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict): raise ValueError("Recipe root must be a YAML mapping")
+    if not isinstance(value, dict):
+        raise ValueError("Recipe root must be a YAML mapping")
     return value
 
 def structural_validate(recipe: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    required = {"id","name","version","role","objective","environment","policy","evidence","completion"}
+    required = {"id", "name", "version", "role", "objective", "environment", "policy", "evidence", "completion"}
     errors.extend(f"missing required field: {key}" for key in sorted(required - recipe.keys()))
-    if recipe.get("role") not in ROLE_VALUES: errors.append(f"invalid role: {recipe.get('role')!r}")
+    if recipe.get("role") not in ROLE_VALUES:
+        errors.append(f"invalid role: {recipe.get('role')!r}")
 
     role_definition = recipe.get("role_definition")
-    if role_definition is not None:
-        if not isinstance(role_definition, dict): errors.append("role_definition must be a mapping")
-        elif role_definition.get("id") != recipe.get("role"): errors.append("role_definition.id must match recipe.role")
+    if role_definition is not None and not isinstance(role_definition, dict):
+        errors.append("role_definition must be a mapping")
 
-    capabilities = recipe.get("capability_catalog", recipe.get("capabilities", [])) or []
-    if not isinstance(capabilities, list):
-        errors.append("capability_catalog must be a list"); capabilities = []
-    cap_by_id: dict[str, dict[str, Any]] = dict(canonical_capabilities())
-    for cap in capabilities:
-        if not isinstance(cap, dict): errors.append("each capability must be a mapping"); continue
-        cid = cap.get("id")
-        if not cid: errors.append("capability.id is required"); continue
-        if cid in cap_by_id and cid not in canonical_capabilities(): errors.append(f"duplicate capability id: {cid!r}")
-        cap_by_id[cid] = cap
-        if cap.get("kind") not in CAPABILITY_KINDS: errors.append(f"invalid capability kind for {cid!r}: {cap.get('kind')!r}")
-        if cap.get("risk") not in CAPABILITY_RISKS: errors.append(f"invalid capability risk for {cid!r}: {cap.get('risk')!r}")
-        if not cap.get("name") or not cap.get("description"): errors.append(f"capability {cid!r} requires name and description")
-        for tool in cap.get("tools", []) or []:
-            if tool not in TOOLS: errors.append(f"unsupported capability tool {tool!r} in {cid!r}")
+    # Recipe capability_catalog is deprecated as a semantic definition.
+    # References must resolve against the canonical registry.
+    canonical = canonical_capabilities()
+    catalog = recipe.get("capability_catalog")
+    if catalog is not None:
+        if not isinstance(catalog, list):
+            errors.append("capability_catalog must be a list")
+        else:
+            for item in catalog:
+                if not isinstance(item, dict) or not item.get("id"):
+                    errors.append("capability_catalog entries must contain id")
+                elif item["id"] not in canonical:
+                    errors.append(f"capability_catalog references non-canonical capability {item['id']!r}; promote it first")
+
+    for capability in required_capabilities(recipe):
+        if capability not in canonical:
+            errors.append(f"recipe references non-canonical capability {capability!r}; promote it first")
 
     skills = recipe.get("skills", []) or []
-    if not isinstance(skills, list): errors.append("skills must be a list"); skills = []
-    skill_ids = {s.get("id") for s in skills if isinstance(s, dict) and s.get("id")}
-    if isinstance(role_definition, dict):
-        for sid in role_definition.get("skills", []) or []:
-            if sid not in skill_ids: errors.append(f"role_definition references undeclared skill {sid!r}")
-        for cid in role_definition.get("default_capabilities", []) or []:
-            if cid not in cap_by_id: errors.append(f"role_definition references unknown capability {cid!r}")
-
-    for skill in skills:
-        if not isinstance(skill, dict): errors.append("each skill must be a mapping"); continue
-        sid = skill.get("id")
-        if not sid: errors.append("skill.id is required"); continue
-        if not skill.get("name") or skill.get("kind") not in SKILL_KINDS or not skill.get("description"): errors.append(f"skill {sid!r} requires valid name, kind, and description")
-        if skill.get("execution_mode", "codex_native") not in SKILL_EXECUTION_MODES: errors.append(f"invalid execution mode for skill {sid!r}")
-        for cap in skill.get("capabilities", []) or []:
-            if cap not in cap_by_id: errors.append(f"skill {sid!r} references unknown capability {cap!r}; add it to the canonical registry or recipe capability_catalog")
-        for tool in skill.get("tools", []) or []:
-            if tool not in TOOLS: errors.append(f"unsupported skill tool {tool!r} in {sid!r}")
+    if not isinstance(skills, list):
+        errors.append("skills must be a list")
+        skills = []
 
     environment = recipe.get("environment")
-    if not isinstance(environment, dict): errors.append("environment must be a mapping"); return errors
-    if environment.get("type", "local") != "local": errors.append("environment.type must be local; hosted sandbox execution is not supported")
+    if not isinstance(environment, dict):
+        errors.append("environment must be a mapping")
+        return errors
+    if environment.get("type", "local") != "local":
+        errors.append("environment.type must be local; hosted sandbox execution is not supported")
     sandbox = environment.get("sandbox")
     if not isinstance(sandbox, dict):
         errors.append("environment.sandbox must be a mapping")
     else:
-        backend = sandbox.get("backend")
-        if not isinstance(backend, str) or not backend: errors.append("environment.sandbox.backend must be a provider identifier")
-        if sandbox.get("inherit_host_environment", False): errors.append("host environment inheritance must remain disabled")
-        if environment.get("host_mounts", False): errors.append("host filesystem mounts must remain disabled")
-    if environment.get("privileged", False): errors.append("privileged execution is prohibited by default")
+        if not isinstance(sandbox.get("backend"), str) or not sandbox.get("backend"):
+            errors.append("environment.sandbox.backend must be a provider identifier")
+        if sandbox.get("inherit_host_environment", False):
+            errors.append("host environment inheritance must remain disabled")
+    if environment.get("privileged", False):
+        errors.append("privileged execution is prohibited by default")
+
+    if "compute" in recipe or "instrumentation" in recipe:
+        errors.append("inline compute/instrumentation configuration is deprecated; use profiles")
 
     policy = recipe.get("policy")
-    if not isinstance(policy, dict): errors.append("policy must be a mapping")
+    if not isinstance(policy, dict):
+        errors.append("policy must be a mapping")
     else:
-        for key in ("allow","deny","approval_required"):
-            if policy.get(key) is not None and not isinstance(policy[key], list): errors.append(f"policy.{key} must be a list")
+        for key in ("allow", "deny", "approval_required"):
+            if policy.get(key) is not None and not isinstance(policy[key], list):
+                errors.append(f"policy.{key} must be a list")
     evidence = recipe.get("evidence")
-    if not isinstance(evidence, dict): errors.append("evidence must be a mapping")
-    elif not evidence.get("required"): errors.append("evidence.required must be non-empty")
+    if not isinstance(evidence, dict):
+        errors.append("evidence must be a mapping")
+    elif not evidence.get("required"):
+        errors.append("evidence.required must be non-empty")
     completion = recipe.get("completion")
-    if not isinstance(completion, dict): errors.append("completion must be a mapping")
-    elif completion.get("report_required", True) is not True: errors.append("completion.report_required must remain true")
-    instrumentation = recipe.get("instrumentation", {}) or {}
-    if not isinstance(instrumentation, dict): errors.append("instrumentation must be a mapping")
-    else:
-        for field in ("required", "preferred", "tools", "trace_flags", "events", "probes", "collectors"):
-            if field in instrumentation and not isinstance(instrumentation[field], list):
-                errors.append(f"instrumentation.{field} must be a list")
-        for tool in instrumentation.get("tools", []) or []:
-            if tool not in TOOLS: errors.append(f"unsupported instrumentation tool: {tool!r}")
-    compute = recipe.get("compute")
-    if compute is not None:
-        if not isinstance(compute, dict): errors.append("compute must be a mapping")
-        else:
-            for field in ("required", "preferred"):
-                if field in compute and not isinstance(compute[field], list): errors.append(f"compute.{field} must be a list")
+    if not isinstance(completion, dict):
+        errors.append("completion must be a mapping")
+    elif completion.get("report_required", True) is not True:
+        errors.append("completion.report_required must remain true")
+
     return errors
 
 def validate_experiment_graph(recipe: dict[str, Any]) -> list[str]:
-    """Validate the optional experiment DAG and its capability references."""
     errors: list[str] = []
     steps = recipe.get("experiments", []) or []
     if not isinstance(steps, list):
         return ["experiments must be a list"]
-
-    declared = {c.get("id") for c in (recipe.get("capability_catalog", []) or [])
-                if isinstance(c, dict) and c.get("id")}
-    step_ids: set[str] = set()
+    declared = set(canonical_capabilities())
+    step_ids = {x.get("id") for x in steps if isinstance(x, dict) and x.get("id")}
     graph: dict[str, list[str]] = {}
-
     for step in steps:
         if not isinstance(step, dict):
             errors.append("each experiment step must be a mapping")
@@ -282,32 +217,20 @@ def validate_experiment_graph(recipe: dict[str, Any]) -> list[str]:
         if not sid:
             errors.append("experiment.id is required")
             continue
-        if sid in step_ids:
-            errors.append(f"duplicate experiment id: {sid!r}")
-        step_ids.add(sid)
-        deps = step.get("depends_on", []) or []
-        if not isinstance(deps, list):
-            errors.append(f"experiment {sid!r}: depends_on must be a list")
-            deps = []
-        graph[sid] = deps
-        for dep in deps:
+        graph[sid] = step.get("depends_on", []) or []
+        for dep in graph[sid]:
             if dep == sid:
                 errors.append(f"experiment {sid!r}: cannot depend on itself")
-            elif dep not in step_ids and dep not in {x.get("id") for x in steps if isinstance(x, dict)}:
+            elif dep not in step_ids:
                 errors.append(f"experiment {sid!r}: unknown dependency {dep!r}")
-        capabilities = step.get("capabilities", []) or []
+        capabilities = list(step.get("capabilities", []) or [])
         if step.get("capability"):
-            capabilities = list(capabilities) + [step["capability"]]
-        if not isinstance(capabilities, list):
-            errors.append(f"experiment {sid!r}: capabilities must be a list")
-            continue
+            capabilities.append(step["capability"])
         for capability in capabilities:
             if capability not in declared:
-                errors.append(f"experiment {sid!r}: undeclared capability {capability!r}")
-
+                errors.append(f"experiment {sid!r}: non-canonical capability {capability!r}")
     visiting: set[str] = set()
     visited: set[str] = set()
-
     def visit(node: str) -> None:
         if node in visiting:
             errors.append(f"experiment graph contains a cycle at {node!r}")
@@ -320,23 +243,20 @@ def validate_experiment_graph(recipe: dict[str, Any]) -> list[str]:
                 visit(dep)
         visiting.remove(node)
         visited.add(node)
-
     for node in graph:
         visit(node)
     return errors
 
-
 def preflight(recipe: dict[str, Any]) -> list[str]:
-    sandbox = recipe.get("environment", {}).get("sandbox", {})
-    backend = sandbox.get("backend")
-    if backend == "docker": return ["Docker backend selected: local Docker daemon must be available"]
-    if backend in {"podman","lima","incus","lxc","kvm","firecracker","qemu"}: return [f"{backend} backend selected: local provider must be installed and available"]
-    if backend == "unix": return ["Unix-local backend selected: commands execute with host permissions; use only for trusted workloads or an externally isolated host"]
+    profile_errors = validate_recipe_profiles(recipe, DEFAULT_PROFILE_REGISTRY)
+    if profile_errors:
+        return [f"PROFILE: {item}" for item in profile_errors]
     return []
 
 def validate_recipe(path: Path) -> tuple[dict[str, Any], list[str], list[str]]:
     recipe = load_recipe(path)
     errors = structural_validate(recipe)
+    errors.extend(validate_experiment_graph(recipe))
     if not errors:
         errors.extend(validate_capability_providers(recipe))
     return recipe, errors, preflight(recipe) if not errors else []
