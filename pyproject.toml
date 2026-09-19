@@ -1,7 +1,7 @@
 [project]
 name = "decretum"
 version = "0.3.0"
-description = "Declarative local security research compiler for OpenAI Agents SDK and Codex"
+description = "Harness-neutral security research capability resolver and execution-contract compiler"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -11,17 +11,11 @@ dependencies = [
   "typer>=0.9",
   "pyyaml>=6.0",
   "jsonschema>=4.21",
-  "openai>=2.0.0",
-  "openai-agents>=0.4.0",
   "rich>=13.7",
 ]
 
-[project.optional-dependencies]
-docker = ["openai-agents[docker]>=0.4.0"]
-
 [project.scripts]
 decretum = "sec_agent.cli:app"
-sec-agent = "sec_agent.cli:app"
 
 [build-system]
 requires = ["hatchling"]
