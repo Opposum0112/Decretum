@@ -14,6 +14,7 @@ BACKENDS = {"unix", "docker", "podman", "lima", "incus", "lxc", "kvm", "firecrac
 
 
 from functools import lru_cache
+from .capability_registry import canonical_capabilities
 
 PROVIDER_INTERFACE_TYPES = {"mcp", "api", "tool"}
 DEFAULT_PROVIDER_REGISTRY = Path(__file__).resolve().parents[1] / "schema" / "provider_registry.yaml"
@@ -167,12 +168,12 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
     capabilities = recipe.get("capability_catalog", recipe.get("capabilities", [])) or []
     if not isinstance(capabilities, list):
         errors.append("capability_catalog must be a list"); capabilities = []
-    cap_by_id: dict[str, dict[str, Any]] = {}
+    cap_by_id: dict[str, dict[str, Any]] = dict(canonical_capabilities())
     for cap in capabilities:
         if not isinstance(cap, dict): errors.append("each capability must be a mapping"); continue
         cid = cap.get("id")
         if not cid: errors.append("capability.id is required"); continue
-        if cid in cap_by_id: errors.append(f"duplicate capability id: {cid!r}")
+        if cid in cap_by_id and cid not in canonical_capabilities(): errors.append(f"duplicate capability id: {cid!r}")
         cap_by_id[cid] = cap
         if cap.get("kind") not in CAPABILITY_KINDS: errors.append(f"invalid capability kind for {cid!r}: {cap.get('kind')!r}")
         if cap.get("risk") not in CAPABILITY_RISKS: errors.append(f"invalid capability risk for {cid!r}: {cap.get('risk')!r}")
@@ -187,7 +188,7 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
         for sid in role_definition.get("skills", []) or []:
             if sid not in skill_ids: errors.append(f"role_definition references undeclared skill {sid!r}")
         for cid in role_definition.get("default_capabilities", []) or []:
-            if cid not in cap_by_id: errors.append(f"role_definition references undeclared capability {cid!r}")
+            if cid not in cap_by_id: errors.append(f"role_definition references unknown capability {cid!r}")
 
     for skill in skills:
         if not isinstance(skill, dict): errors.append("each skill must be a mapping"); continue
@@ -196,7 +197,7 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
         if not skill.get("name") or skill.get("kind") not in SKILL_KINDS or not skill.get("description"): errors.append(f"skill {sid!r} requires valid name, kind, and description")
         if skill.get("execution_mode", "codex_native") not in SKILL_EXECUTION_MODES: errors.append(f"invalid execution mode for skill {sid!r}")
         for cap in skill.get("capabilities", []) or []:
-            if cap not in cap_by_id: errors.append(f"skill {sid!r} references undeclared capability {cap!r}")
+            if cap not in cap_by_id: errors.append(f"skill {sid!r} references unknown capability {cap!r}; add it to the canonical registry or recipe capability_catalog")
         for tool in skill.get("tools", []) or []:
             if tool not in TOOLS: errors.append(f"unsupported skill tool {tool!r} in {sid!r}")
 
