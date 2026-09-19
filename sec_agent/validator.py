@@ -49,9 +49,24 @@ def provider_capability_index(registry: dict[str, Any]) -> dict[str, list[str]]:
     return index
 
 
+def _requirement_lists(recipe: dict[str, Any]) -> tuple[list[str], list[str], list[str], list[str]]:
+    """Return required/preferred instrumentation and compute provider hints."""
+    instrumentation = recipe.get("instrumentation") or {}
+    compute = recipe.get("compute") or {}
+    return (
+        list(instrumentation.get("required", []) or []) if isinstance(instrumentation, dict) else [],
+        list(instrumentation.get("preferred", []) or []) if isinstance(instrumentation, dict) else [],
+        list(compute.get("required", []) or []) if isinstance(compute, dict) else [],
+        list(compute.get("preferred", []) or []) if isinstance(compute, dict) else [],
+    )
+
+
 def required_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> set[str]:
-    """Return the canonical capability closure used by validation and compilation."""
+    """Return the capability closure, including recipe-level instrumentation/compute requirements."""
     required = set(recipe.get("capabilities", []) or [])
+    instrumentation_required, _, compute_required, _ = _requirement_lists(recipe)
+    required.update(instrumentation_required)
+    required.update(compute_required)
     if (recipe.get("workload") or {}).get("command"):
         required.add("process.execute")
     for skill in recipe.get("skills", []) or []:
@@ -74,6 +89,23 @@ def required_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_
             required.update(provider.get("capabilities", []) or [])
     return required
 
+def _validate_requirement_preferences(recipe: dict[str, Any], registry: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    providers = registry.get("providers", {}) or {}
+    instrumentation_required, instrumentation_preferred, compute_required, compute_preferred = _requirement_lists(recipe)
+    for label, values in (("instrumentation.required", instrumentation_required), ("instrumentation.preferred", instrumentation_preferred), ("compute.required", compute_required), ("compute.preferred", compute_preferred)):
+        if not all(isinstance(v, str) and v for v in values):
+            errors.append(f"{label} must contain non-empty strings")
+    for provider_id in instrumentation_preferred + compute_preferred:
+        if provider_id not in providers:
+            errors.append(f"preferred provider {provider_id!r} is not registered")
+    for label, required_caps, preferred in (("instrumentation", instrumentation_required, instrumentation_preferred), ("compute", compute_required, compute_preferred)):
+        for provider_id in preferred:
+            advertised = set((providers.get(provider_id, {}) or {}).get("capabilities", []) or [])
+            if required_caps and not advertised.intersection(required_caps):
+                errors.append(f"preferred {label} provider {provider_id!r} does not advertise any required capability")
+    return errors
+
 def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str]:
     """Fail compilation when a declared/required capability has no provider."""
     try:
@@ -84,6 +116,7 @@ def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = 
     if errors:
         return errors
     index = provider_capability_index(registry)
+    errors.extend(_validate_requirement_preferences(recipe, registry))
     required = required_capabilities(recipe, registry_path)
     for skill in recipe.get("skills", []) or []:
         if isinstance(skill, dict):
@@ -208,8 +241,17 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
     instrumentation = recipe.get("instrumentation", {}) or {}
     if not isinstance(instrumentation, dict): errors.append("instrumentation must be a mapping")
     else:
+        for field in ("required", "preferred", "tools", "trace_flags", "events", "probes", "collectors"):
+            if field in instrumentation and not isinstance(instrumentation[field], list):
+                errors.append(f"instrumentation.{field} must be a list")
         for tool in instrumentation.get("tools", []) or []:
             if tool not in TOOLS: errors.append(f"unsupported instrumentation tool: {tool!r}")
+    compute = recipe.get("compute")
+    if compute is not None:
+        if not isinstance(compute, dict): errors.append("compute must be a mapping")
+        else:
+            for field in ("required", "preferred"):
+                if field in compute and not isinstance(compute[field], list): errors.append(f"compute.{field} must be a list")
     return errors
 
 def validate_experiment_graph(recipe: dict[str, Any]) -> list[str]:
