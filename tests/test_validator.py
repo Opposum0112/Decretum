@@ -21,7 +21,7 @@ def test_compiler_produces_deterministic_contract():
     a = compile_recipe(recipe, Path("artifacts/test"))
     b = compile_recipe(recipe, Path("artifacts/test"))
     assert a.contract_id == b.contract_id
-    assert a.contract["kind"] == "ResearchExecutionContract"
+    assert a.contract["kind"] == "ExecutionContract"\n    assert a.contract["domain"] == "security_research"
     assert "process.execute" in a.contract["capabilities"]
 
 
@@ -120,6 +120,20 @@ def test_harness_adapter_only_prepares_handoff():
     contract = compile_recipe(recipe, Path("artifacts/test-adapter"))
     adapter = get_adapter(contract.contract["execution"]["harness"])
     envelope = adapter.prepare(contract.contract)
-    assert envelope["type"] == "research_execution_handoff"
+    assert envelope["type"] == "execution_handoff"
     assert envelope["execution"] == "external_harness_runtime"
     assert envelope["decretum_action"] == "none_after_handoff"
+
+
+def test_domain_neutral_recipe_shape_is_accepted():
+    recipe = {
+        "apiVersion": "decretum.dev/v1",
+        "kind": "ExecutionRecipe",
+        "domain": "software_engineering",
+        "id": "software-task",
+        "name": "Software Task",
+        "version": "1.0",
+        "objective": "Build and validate a service.",
+        "capabilities": [],
+    }
+    assert structural_validate(recipe) == []
