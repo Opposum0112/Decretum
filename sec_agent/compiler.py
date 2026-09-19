@@ -149,7 +149,8 @@ def compile_recipe(
             "version": recipe["version"],
             "objective": recipe["objective"],
         }
-\n    source = Path(recipe.get("_source_path", "recipe.yaml"))
+
+    source = Path(recipe.get("_source_path", "recipe.yaml"))
     manifest = create_manifest(source, schema_path, registry_path, artifact_dir) if source.exists() and schema_path else None
     if manifest:
         body["compilation_manifest"] = {
