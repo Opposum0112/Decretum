@@ -10,6 +10,8 @@ from typing import Any
 from .resolver import resolve_capabilities
 from .validator import DEFAULT_PROVIDER_REGISTRY, required_capabilities\nfrom .registry_snapshot import snapshot_registry
 from .manifest import create_manifest
+from .environment_plan import plan_environment
+from .validator import load_provider_registry
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +58,8 @@ def compile_recipe(
 ) -> ExecutionContract:
     registry_snapshot = snapshot_registry(registry_path, artifact_dir)
     schema_path = Path(__file__).resolve().parent.parent / "schema" / "sec_research_metamodel.yaml"\n    resolution = resolve_capabilities(recipe, registry_path)
+    registry = load_provider_registry(str(registry_path))
+    environment_plan = plan_environment(recipe, registry)
     steps = _experiment_steps(recipe)
     experiment_graph = {
         "steps": steps,
@@ -97,6 +101,10 @@ def compile_recipe(
         },
         "inputs": recipe.get("inputs", {}),
         "environment": recipe["environment"],
+        "environment_plan": environment_plan,
+        "provisioning_plan": environment_plan.get("provisioning", {}),
+        "teardown_plan": recipe.get("environment", {}).get("teardown", {"enabled": True, "destroy_ephemeral": True, "collect_evidence_first": True}),
+        "analysis_plan": recipe.get("environment", {}).get("analysis", {"enabled": True, "interactive": True}),
         "roles": [{
             "id": recipe["role"],
             "definition": recipe.get("role_definition", {}),
