@@ -178,16 +178,44 @@ Required capabilities
   ↓
 Provider registry
   ↓
-Local readiness
+Provider readiness
   ↓
-Execution surface
+Integration / execution surface
   ↓
-Harness compatibility
+Harness implementation compatibility
   ↓
-Policy / compatibility
+Harness operations
+  ├── provision       (when compute is required)
+  ├── implement_capabilities
+  ├── execute
+  ├── orchestrate
+  ├── collect_evidence
+  └── researcher_interaction
   ↓
-Selected providers
+Policy / semantic compatibility
+  ↓
+Selected provider + harness path
 ```
+
+A provider being installed is **not enough**. Resolution checks the complete execution path. For a VM capability, for example:
+
+```
+compute.vm
+   ↓
+Lima / Incus / QEMU
+   ↓
+integration or direct tool surface
+   ↓
+selected harness
+   ↓
+harness can provision + implement + execute
+   ↓
+host/provider readiness + policy
+   ↓
+READY
+```
+
+If the harness cannot perform a required operation, the path is not ready and the contract records the missing operation instead of pretending the capability is executable.
 
 A capability may have multiple providers:
 
