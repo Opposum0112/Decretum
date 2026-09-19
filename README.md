@@ -297,6 +297,38 @@ Replay does not execute tools, containers, VMs, MCP servers or agents.
 
 ---
 
+## Recipe-level instrumentation and compute
+
+Recipes can now express both **what must be available** and **which implementation providers are preferred**, without encoding provider lifecycle or provisioning logic.
+
+```yaml
+instrumentation:
+  required:
+    - syscall.observe
+    - network.metadata
+  preferred:
+    - sysdig
+    - zeek
+
+compute:
+  required:
+    - compute.vm
+  preferred:
+    - lima
+    - incus
+```
+
+The semantics are deliberately small:
+
+- `required` lists capability IDs.
+- `preferred` lists provider IDs from `schema/provider_registry.yaml`.
+- Validation checks that preferred providers are registered and advertise a relevant required capability.
+- Resolution records the preferences and marks matching providers as preferred.
+- Experiment bindings prefer those providers when they are ready and policy-compatible.
+- Provisioning, instrumentation activation, VM lifecycle, and teardown remain harness/runtime responsibilities.
+
+See `recipes/suspicious-network-investigation.yaml` for a complete example.
+
 # Adding a capability
 
 Capability discovery follows:
