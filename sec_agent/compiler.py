@@ -1,4 +1,10 @@
-"""Compile capability recipes into harness-neutral research execution contracts."""
+"""Compile capability recipes into harness-neutral execution contracts.
+
+Decretum compiles and stops at the handoff boundary. It does not execute
+experiments, run a harness, manage researcher interaction, or persist findings.
+Those responsibilities belong to the external harness runtime and its research
+store.
+"""
 from __future__ import annotations
 
 import hashlib
@@ -39,17 +45,25 @@ def _experiment_steps(recipe: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _plan_digest(plan: dict[str, Any]) -> str:
-    return hashlib.sha256(json.dumps(plan, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return hashlib.sha256(
+        json.dumps(plan, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
 
 
-def compile_recipe(recipe: dict[str, Any], artifact_dir: Path, registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> ExecutionContract:
+def compile_recipe(
+    recipe: dict[str, Any],
+    artifact_dir: Path,
+    registry_path: Path = DEFAULT_PROVIDER_REGISTRY,
+) -> ExecutionContract:
+    """Resolve a recipe and produce a portable contract for an external harness runtime."""
     registry_snapshot = snapshot_registry(registry_path, artifact_dir)
     schema_path = Path(__file__).resolve().parent.parent / "schema" / "sec_research_metamodel.yaml"
     resolution = resolve_capabilities(recipe, registry_path)
+    steps = _experiment_steps(recipe)
     experiment_graph = {
-        "steps": _experiment_steps(recipe),
-        "entrypoints": [s["id"] for s in _experiment_steps(recipe) if not s["depends_on"]],
-        "execution_order": [s["id"] for s in _experiment_steps(recipe)],
+        "steps": steps,
+        "entrypoints": [s["id"] for s in steps if not s["depends_on"]],
+        "execution_order": [s["id"] for s in steps],
     }
     execution_plan = resolution.get("experiment_plan", [])
     resolution_audit = {
@@ -65,13 +79,20 @@ def compile_recipe(recipe: dict[str, Any], artifact_dir: Path, registry_path: Pa
         "execution_surfaces": resolution.get("execution_surfaces", []),
         "experiment_plan": execution_plan,
     }
-    harness = (resolution.get("profiles", {}).get("harness") or {}).get("preferred", [None])[0] or "codex"
+    harnesses = resolution.get("profiles", {}).get("harness", {}).get("preferred", [])
+    harness = harnesses[0] if harnesses else "codex"
+
     body: dict[str, Any] = {
         "apiVersion": "decretum.dev/v1",
         "kind": "ResearchExecutionContract",
-        "contract_version": "4",
+        "contract_version": "5",
         "contract_id": "",
-        "research": {"id": recipe["id"], "name": recipe["name"], "version": recipe["version"], "objective": recipe["objective"]},
+        "research": {
+            "id": recipe["id"],
+            "name": recipe["name"],
+            "version": recipe["version"],
+            "objective": recipe["objective"],
+        },
         "capabilities": sorted(required_capabilities(recipe, registry_path)),
         "profiles": resolution.get("profiles", {}),
         "experiment_graph": experiment_graph,
@@ -79,37 +100,73 @@ def compile_recipe(recipe: dict[str, Any], artifact_dir: Path, registry_path: Pa
             "harness": harness,
             "resolution": resolution_audit,
             "approval_plan": {
-                "required": sorted({c for step in execution_plan for c in step.get("approval_required", [])}),
+                "required": sorted({
+                    c for step in execution_plan for c in step.get("approval_required", [])
+                }),
                 "steps": [step["id"] for step in execution_plan if step.get("approval_required")],
             },
             "policy": recipe.get("policy", {}),
-            "orchestration": {"executor": harness, "mode": "interactive"},
+            "orchestration": {"mode": "interactive", "executor": harness},
+        },
+        "handoff": {
+            "target": "external_harness_runtime",
+            "mode": "contract_only",
+            "decretum_stops_after_compilation": True,
+            "runtime_owns": [
+                "researcher_interaction",
+                "environment_provisioning",
+                "capability_implementation",
+                "experiment_execution",
+                "orchestration",
+                "evidence_collection",
+                "finding_development",
+                "report_generation",
+                "research_store_persistence",
+            ],
+            "runtime_must_not_change_contract_semantics": True,
+            "new_capability_or_requirement": "return_to_decretum_for_resolution_and_recompilation",
         },
         "research_loop": {
             "interactive": True,
+            "owner": "external_harness_runtime",
             "persist_evidence": True,
             "persist_findings": True,
             "persist_report": True,
-            "harness_responsible_for": ["provision", "implement_capabilities", "execute", "orchestrate", "collect_evidence", "researcher_interaction"],
         },
         "evidence": recipe.get("evidence", {}),
         "completion": recipe.get("completion", {}),
         "reports": recipe.get("reports", []),
-        "provider_registry_snapshot": {"digest": registry_snapshot["digest"], "artifact": "provider-registry.snapshot.json"},
+        "provider_registry_snapshot": {
+            "digest": registry_snapshot["digest"],
+            "artifact": "provider-registry.snapshot.json",
+        },
         "plan_digest": _plan_digest(resolution_audit),
         "compilation_manifest": {"artifact": "compilation-manifest.json"},
     }
+
     source = Path(recipe.get("_source_path", "recipe.yaml"))
     manifest = create_manifest(source, schema_path, registry_path, artifact_dir) if source.exists() else None
     if manifest:
-        body["compilation_manifest"] = {"artifact": "compilation-manifest.json", "digest": manifest["digest"]}
-    canonical = json.dumps({k: v for k, v in body.items() if k != "contract_id"}, sort_keys=True, separators=(",", ":")).encode()
+        body["compilation_manifest"] = {
+            "artifact": "compilation-manifest.json",
+            "digest": manifest["digest"],
+        }
+
+    canonical = json.dumps(
+        {k: v for k, v in body.items() if k != "contract_id"},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
     body["contract_id"] = hashlib.sha256(canonical).hexdigest()[:16]
     return ExecutionContract(body["contract_id"], body, artifact_dir)
 
 
 def write_contract(contract: ExecutionContract) -> Path:
+    """Write only the compiled handoff artifact; never execute it."""
     contract.artifact_dir.mkdir(parents=True, exist_ok=True)
     path = contract.artifact_dir / "research-contract.json"
-    path.write_text(json.dumps(contract.contract, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(contract.contract, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     return path
