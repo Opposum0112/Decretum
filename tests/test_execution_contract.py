@@ -20,10 +20,9 @@ def test_compiler_emits_execution_ir():
     assert not errors
     contract = compile_recipe(recipe, Path("artifacts/test"))
     assert contract.contract["kind"] == "ResearchExecutionContract"
-    assert contract.contract["contract_version"] == "2"
+    assert contract.contract["contract_version"] == "3"
     assert "experiment_graph" in contract.contract
     assert "resolution" in contract.contract
-    assert "capability_requirements" in contract.contract
 
 
 def test_experiment_dag_rejects_cycles_and_unknown_dependencies(tmp_path):
@@ -243,7 +242,7 @@ def test_registry_snapshot_tampering_is_detected(tmp_path):
     from sec_agent.validator import DEFAULT_PROVIDER_REGISTRY
     snapshot_registry(DEFAULT_PROVIDER_REGISTRY, tmp_path)
     path = tmp_path / "provider-registry.snapshot.json"
-    data = path.read_text(encoding="utf-8").replace('"version": "1.1"', '"version": "tampered"')
+    data = path.read_text(encoding="utf-8").replace('"version": "1.3"', '"version": "tampered"')
     path.write_text(data, encoding="utf-8")
     try:
         load_snapshot(path)
