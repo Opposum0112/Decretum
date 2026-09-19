@@ -63,6 +63,8 @@ def compile_recipe(recipe: dict[str, Any], artifact_dir: Path, registry_path: Pa
         "capabilities": resolution.get("capabilities", []),
         "failures": resolution.get("failures", []),
         "harnesses": resolution.get("harnesses", []),
+        "harness_requirements": resolution.get("harness_requirements", []),
+        "harness_checks": resolution.get("harness_checks", {}),
         "provider_preferences": resolution.get("provider_preferences", {}),
         "readiness": resolution.get("readiness", {}),
         "execution_surfaces": resolution.get("execution_surfaces", []),
