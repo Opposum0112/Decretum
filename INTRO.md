@@ -10,6 +10,62 @@ It translates structured intent into a validated, portable execution contract.
 
 Security research is the reference domain today, but it is not the architectural boundary.
 
+## What problem does Decretum solve?
+
+Open knowledge frameworks, specifications, ontologies, and Markdown-based instructions are good at describing **what something means** or **what should be done**. Agent runtimes are good at reasoning and carrying out work. The gap is the deterministic execution structure between them.
+
+Without that layer, an agent may have to infer:
+
+- which capabilities are actually required
+- which providers implement those capabilities
+- which integration exposes each provider
+- which harness can execute them
+- whether prerequisites are available
+- which policies and constraints apply
+- what execution contract should be handed to the runtime
+
+Decretum provides that missing compilation layer:
+
+```
+Knowledge / Specification
+          |
+          v
+   Structured Intent
+          |
+          v
+       DECRETUM
+          |
+   schema + recipe + profile
+          |
+      resolution
+          |
+ capability + provider + integration
+       + harness + readiness + policy
+          |
+          v
+ Deterministic Execution Contract
+          |
+          v
+    Agent / Harness Runtime
+          |
+          v
+ Interactive Execution
+```
+
+This creates a deliberate separation:
+
+- **Knowledge/specification frameworks** define meaning and intent.
+- **Decretum** determines how that intent can be deterministically fulfilled in the available execution ecosystem.
+- **Agents/harnesses** perform reasoning, interaction, adaptation, and execution.
+- **External stores** retain evidence, artifacts, findings, or other persistent state.
+
+Decretum therefore does **not** attempt to make the agent's reasoning deterministic. It makes the **execution substrate and handoff deterministic**.
+
+> **Decretum bridges declarative specifications and agentic execution by compiling structured intent into deterministic, capability-resolved execution contracts.**
+
+This allows the same semantic intent to be executed through different providers, integrations, profiles, and agent runtimes without embedding those implementation choices into the specification itself.
+
+
 ## The core abstraction
 
 ```
