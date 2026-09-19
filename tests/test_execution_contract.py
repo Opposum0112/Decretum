@@ -126,3 +126,20 @@ def test_policy_marks_capability_approval_required():
     assert not errors
     policy = policy_for_capability("process.execute", recipe, {"process.execute": {"risk": "execute", "requires_approval": True}})
     assert policy["approval_required"] is True
+
+
+def test_provider_equivalence_marks_different_semantics_unsafe():
+    from sec_agent.equivalence import equivalence
+    a = {"interface": {"type": "tool"}, "isolation": "host", "network": "host", "privileged": False}
+    b = {"interface": {"type": "tool"}, "isolation": "container", "network": "none", "privileged": False}
+    result = equivalence(a, b, "network.capture")
+    assert result["equivalent"] is False
+    assert "isolation" in result["differences"]
+
+
+def test_equivalent_fallback_is_marked_safe():
+    from sec_agent.equivalence import annotate_equivalence
+    a = {"interface": {"type": "tool"}, "isolation": "host", "network": "host", "privileged": False}
+    b = {"interface": {"type": "tool"}, "isolation": "host", "network": "host", "privileged": False}
+    result = annotate_equivalence(a, b, "network.capture")
+    assert result["safe_fallback"] is True
