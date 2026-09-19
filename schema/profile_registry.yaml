@@ -1,6 +1,6 @@
 apiVersion: decretum.dev/v1
 kind: ProfileRegistry
-version: "1.0"
+version: "1.1"
 
 # Profiles are researcher preferences/configuration.
 # They do not define canonical capability semantics.
