@@ -273,3 +273,34 @@ def test_resolver_marks_preferred_providers_without_changing_capability_semantic
     compute = next(item for item in result["capabilities"] if item["capability"] == "compute.vm")
     preferred = {p["provider"] for p in compute["providers"] if p["preferred"]}
     assert {"lima", "incus"}.issubset(preferred)
+
+
+def test_resolver_checks_harness_operations_for_compute_provisioning():
+    from sec_agent.resolver import resolve_capabilities
+    from sec_agent.validator import load_recipe
+    recipe = load_recipe(Path("recipes/suspicious-network-investigation.yaml"))
+    recipe["environment"]["orchestration"]["executor"] = "codex"
+    result = resolve_capabilities(recipe)
+    assert "provision" in result["harness_requirements"]
+    assert result["harness_checks"]["codex"]["compatible"] is True
+    compute = next(item for item in result["capabilities"] if item["capability"] == "compute.vm")
+    assert all("harness_compatibility" in provider for provider in compute["providers"])
+
+
+def test_resolver_blocks_harness_without_required_provision_operation(tmp_path):
+    from sec_agent.resolver import resolve_capabilities
+    from sec_agent.validator import load_recipe
+    recipe = load_recipe(Path("recipes/suspicious-network-investigation.yaml"))
+    recipe["environment"]["orchestration"]["executor"] = "limited"
+    registry = tmp_path / "providers.yaml"
+    source = Path("schema/provider_registry.yaml").read_text(encoding="utf-8")
+    source += "\\nharnesses:\\n  limited:\\n    kind: agent\\n    supported_interfaces: [mcp, api, tool]\\n    operations: [implement_capabilities, execute, orchestrate, collect_evidence, researcher_interaction]\\n"
+    # Keep the provider/integration/model sections from the real registry and replace only harnesses.
+    import yaml
+    data = yaml.safe_load(source)
+    data["harnesses"]["limited"]["operations"].remove("implement_capabilities") if False else None
+    registry.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    result = resolve_capabilities(recipe, registry)
+    assert result["harness_checks"]["limited"]["compatible"] is False
+    assert "provision" in result["harness_checks"]["limited"]["missing_operations"]
+    assert result["harnesses"] == []
