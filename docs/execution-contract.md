@@ -21,7 +21,13 @@ The runtime consumes the contract. It does not redefine its semantics.
 
 ## Contract flow
 
-    Recipe + Profile + Registry State
+    spec.md (optional)
+                  |
+                  v
+              ExecutionRecipe
+                  |
+                  v
+        Recipe + Profile + Registry State
                   |
                   v
               Decretum
@@ -43,12 +49,13 @@ A conforming contract should provide:
 
 1. **Explicit intent** — what outcome is requested.
 2. **Resolved capabilities** — semantic requirements are explicit.
-3. **Concrete execution surfaces** — provider, integration and harness choices are recorded.
-4. **Readiness information** — unavailable prerequisites are visible.
-5. **Policy information** — relevant constraints and approvals are preserved.
-6. **Provenance** — registry and compilation inputs can be audited.
-7. **Deterministic identity** — equivalent inputs and registry state produce the same contract identity.
-8. **Runtime handoff** — the contract clearly states that execution belongs to an external runtime.
+3. **Recipe provenance** — the source Recipe and, when applicable, the originating `spec.md` digest are identifiable.
+4. **Concrete execution surfaces** — provider, integration and harness choices are recorded.
+5. **Readiness information** — unavailable prerequisites are visible.
+6. **Policy information** — relevant constraints and approvals are preserved.
+7. **Provenance** — registry and compilation inputs can be audited.
+8. **Deterministic identity** — equivalent inputs and registry state produce the same contract identity.
+9. **Runtime handoff** — the contract clearly states that execution belongs to an external runtime.
 
 ## Immutability boundary
 
