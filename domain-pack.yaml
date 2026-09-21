@@ -1,9 +1,0 @@
-apiVersion: decretum.dev/v1
-kind: DomainPack
-id: security-research
-name: Decretum Security Research
-version: 1.0.0
-domains:
-  - security_research
-entry_point: security_research
-description: Security research schemas, capabilities, profiles and recipes.
