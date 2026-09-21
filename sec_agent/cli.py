@@ -15,6 +15,7 @@ from rich.table import Table
 from .capability_discovery import discover_capability_surfaces, write_candidate_yaml, write_discovery_report
 from .capability_registry import canonical_capabilities, candidate, promote_capability
 from .compiler import compile_recipe, write_contract
+from .domain_packs import installed_pack_summary, validate_pack_directory
 from .resolver import resolve_capabilities
 from .validator import validate_recipe
 
@@ -98,6 +99,22 @@ def approve_capability(
     console.print("Provider implementations still require explicit registration.")
 
 
+
+
+@spec_app.command("packs")
+def list_domain_packs() -> None:
+    """List installed Decretum domain packs."""
+    console.print_json(json.dumps(installed_pack_summary()))
+
+@spec_app.command("validate-pack")
+def validate_domain_pack(path: Path) -> None:
+    """Validate a local domain-pack directory before packaging."""
+    errors = validate_pack_directory(path)
+    if errors:
+        for item in errors:
+            console.print(f"[red]ERROR[/red] {item}")
+        raise typer.Exit(1)
+    console.print(f"[green]OK[/green] domain pack: {path}")
 
 @spec_app.command("compile")
 def spec_compile(spec: Path, output: Path = Path("recipe.yaml")) -> None:
