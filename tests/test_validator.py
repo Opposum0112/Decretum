@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from decretum.compiler import compile_recipe
+from decretum.compiler import compile_execution_contract
 from decretum.validator import (
     load_recipe,
     structural_validate,
@@ -18,8 +18,8 @@ def test_recipe_is_valid():
 
 def test_compiler_produces_deterministic_contract():
     recipe = load_recipe(RECIPE)
-    a = compile_recipe(recipe, Path("artifacts/test"))
-    b = compile_recipe(recipe, Path("artifacts/test"))
+    a = compile_execution_contract(recipe, Path("artifacts/test"))
+    b = compile_execution_contract(recipe, Path("artifacts/test"))
     assert a.contract_id == b.contract_id
     assert a.contract["kind"] == "ExecutionContract"
     assert a.contract["domain"] == "software_engineering"
@@ -28,7 +28,7 @@ def test_compiler_produces_deterministic_contract():
 
 def test_compiled_contract_is_harness_handoff_only():
     recipe = load_recipe(RECIPE)
-    contract = compile_recipe(recipe, Path("artifacts/test-contract"))
+    contract = compile_execution_contract(recipe, Path("artifacts/test-contract"))
     assert contract.contract["handoff"]["target"] == "external_harness_runtime"
     assert contract.contract["handoff"]["mode"] == "contract_only"
     assert contract.contract["handoff"]["decretum_stops_after_compilation"] is True
@@ -106,7 +106,7 @@ def test_recipe_uses_independent_profiles():
 
 def test_contract_has_frozen_external_runtime_boundary():
     recipe = load_recipe(RECIPE)
-    contract = compile_recipe(recipe, Path("artifacts/test-boundary"))
+    contract = compile_execution_contract(recipe, Path("artifacts/test-boundary"))
     handoff = contract.contract["handoff"]
     assert handoff["target"] == "external_harness_runtime"
     assert handoff["decretum_stops_after_compilation"] is True
@@ -118,7 +118,7 @@ def test_contract_has_frozen_external_runtime_boundary():
 def test_harness_adapter_only_prepares_handoff():
     from decretum.harness_adapters import get_adapter
     recipe = load_recipe(RECIPE)
-    contract = compile_recipe(recipe, Path("artifacts/test-adapter"))
+    contract = compile_execution_contract(recipe, Path("artifacts/test-adapter"))
     adapter = get_adapter(contract.contract["execution"]["harness"])
     envelope = adapter.prepare(contract.contract)
     assert envelope["type"] == "execution_handoff"
