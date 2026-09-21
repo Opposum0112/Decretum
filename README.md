@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Declarative intent → deterministic execution contract → agent / harness</strong>
+  <strong>Declarative intent → schema → capability resolution → recipe → deterministic execution contract → agent / harness</strong>
 </p>
 
 <p align="center">
@@ -18,7 +18,7 @@
 
 > **Decretum turns human intent into a validated Recipe and deterministic Execution Contract for agents and harnesses.**
 
-Decretum is a **domain-neutral Declarative Execution Compiler**. It can accept a human-friendly `spec.md`, compile it into a structured **ExecutionRecipe**, validate and resolve its capabilities, then compile that Recipe into a portable **Execution Contract**.
+Decretum is a **domain-neutral Declarative Execution Compiler**. It accepts a human-friendly `spec.md`, compiles it into a schema-governed specification and **ExecutionRecipe**, resolves each required capability to an available provider/integration/harness execution path, then compiles the resolved Recipe into a portable **Execution Contract**.
 
 Decretum is domain-neutral. The same compiler model can describe software engineering, infrastructure automation, data engineering, incident response, scientific experiments, and other reproducible technical work.
 
@@ -49,20 +49,25 @@ The important separation is:
                     DECRETUM
           Declarative Execution Compiler
                        |
-       +---------------+---------------+
-       |               |               |
-    Schema           Recipe          Profile
-   "what"           "do"            "how"
-       |               |               |
-       +---------------+---------------+
-                       |
-                    Resolver
-                       |
-     capability + provider + integration
-       + harness + readiness + policy
+                       v
+              Specification / Schema
                        |
                        v
-               Execution Contract
+               Capability Resolver
+                       |
+       +---------------+---------------+
+       |               |               |
+    Provider       Integration      Harness
+       |               |               |
+       +---------------+---------------+
+                       |
+              Resolved Capability Plan
+                       |
+                       v
+                    Recipe
+                       |
+                       v
+              Execution Contract
                        |
                        v
               External Harness/Agent
@@ -78,7 +83,7 @@ The important separation is:
 
 ## Domain packs
 
-The compiler core is domain-neutral. Domain-specific semantics live in registries and schemas rather than compiler branches.
+The compiler core is domain-neutral. Domain-specific semantics live in installable domain packs, registries and schemas rather than compiler branches.
 
 Examples:
 
@@ -103,7 +108,10 @@ spec.md / human intent
 Spec Compiler
     |
     v
-structured schema + Recipe + Profile
+Canonical Specification + Recipe
+    |
+    v
+Schema validation
     |
     v
 validated resolution
@@ -188,12 +196,12 @@ The recipe does not contain Lima/Docker lifecycle, MCP implementation, agent pro
 ## End-to-end workflow
 
 1. Author `spec.md` or define a structured Recipe directly.
-2. Compile `spec.md` into an `ExecutionRecipe` when Markdown is used.
-3. Validate the Recipe against the domain schema and canonical capabilities.
-4. Discover available execution surfaces.
-5. Resolve capability → provider → integration → harness.
-6. Check readiness and policy.
-7. Compile the Recipe into the deterministic Execution Contract.
+2. Compile `spec.md` into a canonical, schema-governed specification and `ExecutionRecipe`.
+3. Validate the Recipe against the applicable schema and canonical capabilities.
+4. Resolve each capability to a concrete provider, integration, harness and invocation path.
+5. Check readiness, compatibility and policy.
+6. Produce the resolved Capability Plan.
+7. Compile the resolved Recipe into the deterministic Execution Contract.
 8. Hand the contract to the external harness.
 9. The harness executes, interacts, and persists its state.
 10. If requirements change, return to Decretum and produce a new Recipe/Contract pair.
@@ -238,17 +246,19 @@ Nothing in Decretum's validate/resolve/compile path executes the work.
 ```
 Capability
     |
-Provider
+Provider candidates
     |
-Integration
-    |
-Execution surface
+Integration / interface
     |
 Harness compatibility
+    |
+Invocation / execution mode
     |
 Host/provider readiness
     |
 Policy compatibility
+    |
+Resolved Capability Plan
     |
 READY / BLOCKED
 ```
@@ -318,6 +328,9 @@ Decretum/
 │   ├── capability_registry.yaml
 │   ├── provider_registry.yaml
 │   ├── profile_registry.yaml
+│   ├── specification.schema.yaml
+│   ├── recipe.schema.yaml
+│   ├── capability_implementation.schema.yaml
 │   └── execution_contract.schema.yaml
 ├── examples/
 │   └── spec.md
@@ -395,7 +408,7 @@ Domain Pack (Python package)
 Decretum discovery / validation
    |
    v
-Recipe -> Resolution -> Execution Contract
+Recipe -> Capability Resolution -> Execution Contract
 ```
 
 A contributor can validate and inspect packs with:
