@@ -1,0 +1,21 @@
+apiVersion: decretum.dev/v1
+kind: ProfileRegistry
+version: "1.0"
+infrastructure:
+  local-dev:
+    type: infrastructure
+    description: Local development workspace.
+    compute:
+      type: container
+      preferred_providers: [local-process]
+    network:
+      mode: local
+    lifecycle:
+      ephemeral: false
+instrumentation: {}
+harness:
+  coding-agent:
+    type: harness
+    preferred: [codex, goose]
+    mode: interactive
+    researcher_approval: true
