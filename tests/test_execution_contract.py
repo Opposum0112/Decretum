@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from sec_agent.compiler import compile_recipe
-from sec_agent.validator import load_recipe, structural_validate, validate_recipe
+from decretum.compiler import compile_recipe
+from decretum.validator import load_recipe, structural_validate, validate_recipe
 
-RECIPE = Path("recipes/openai-hosted-malware-analysis.yaml")
+RECIPE = Path("recipes/example-execution-recipe.yaml")
 
 
 def test_reference_recipe_validates():
@@ -17,8 +17,7 @@ def test_compiler_emits_domain_neutral_execution_contract():
     recipe = load_recipe(RECIPE)
     contract = compile_recipe(recipe, Path("artifacts/test"))
     assert contract.contract["kind"] == "ExecutionContract"
-    assert contract.contract["domain"] == "security_research"
-    assert contract.contract["contract_version"] == "5"
+        assert contract.contract["contract_version"] == "5"
     assert contract.contract["recipe_digest"]
     assert contract.contract["handoff"]["mode"] == "contract_only"
     assert contract.contract["handoff"]["decretum_stops_after_compilation"] is True
