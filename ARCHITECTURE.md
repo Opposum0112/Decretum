@@ -212,3 +212,27 @@ The Execution Contract is compiled only after the Recipe is validated and resolv
 This separation permits the same Recipe to produce different contracts when provider, harness or host availability changes while preserving the semantic intent of the Recipe.
 
 If a runtime needs a new capability or changed requirement, the flow returns to the Recipe/Decretum compilation boundary rather than silently mutating the existing contract.
+
+
+## Domain Pack Extension Boundary
+
+Domain Packs are the extension mechanism for domain-specific semantics. A pack is an independently versioned package discovered through the `decretum.domain_packs` Python entry-point group. It can supply schemas, capabilities, profiles, provider metadata, recipes and documentation. Core compilation, validation, resolution and contract semantics remain domain-neutral.
+
+    Domain Pack Package
+          |
+          v
+    Pack Manifest / Discovery
+          |
+          v
+    Domain Schema + Canonical Capabilities + Profiles
+          |
+          v
+    ExecutionRecipe
+          |
+          v
+    Generic Decretum Resolver / Compiler
+          |
+          v
+    Execution Contract
+
+This keeps new domains composable and reviewable while preventing domain-specific logic from leaking into the core compiler.
