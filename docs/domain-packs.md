@@ -36,17 +36,23 @@ domains:
   - my_domain
 ```
 
-A pack should keep its content under a predictable layout:
+A pack is an independently installable Python distribution. A recommended layout is:
 
 ```
-my_decretum_pack/
-├── domain-pack.yaml
-├── schema/
-├── capabilities/
-├── profiles/
-├── recipes/
-└── docs/
+decretum-my-domain/
+├── pyproject.toml
+└── my_domain/
+    ├── __init__.py
+    ├── domain-pack.yaml
+    ├── schema/
+    ├── capabilities/
+    ├── providers/
+    ├── profiles/
+    ├── recipes/
+    └── docs/
 ```
+
+The package advertises the `decretum.domain_packs` entry point. The entry point returns the manifest plus resource locations; Decretum loads those resources without importing domain-specific code into its compiler.
 
 ## Contributor workflow
 
@@ -57,7 +63,7 @@ my_decretum_pack/
    ```bash
    decretum spec validate-pack ./my-pack
    ```
-5. Install the package into a Decretum environment.
+5. Build and install the package into a Decretum environment.
 6. Discover installed packs:
    ```bash
    decretum spec packs
@@ -69,3 +75,13 @@ my_decretum_pack/
 Installing a Domain Pack does not automatically execute its recipes or silently mutate the core canonical vocabulary. Pack content must pass the normal validation and review boundaries.
 
 This enables a package ecosystem where contributors can add domains such as security research, cloud operations, software engineering, DFIR, malware analysis, OT/ICS, or other research domains without forking Decretum's compiler.
+
+
+## Repository examples
+
+This repository contains two installable examples under `packages/`:
+
+- `decretum-security-research` — security research capabilities, providers, profiles and metamodel.
+- `decretum-software-engineering` — a small general-purpose pack used by the software-engineering examples.
+
+The core `decretum/` package contains only domain-neutral schemas and compiler logic. Domain registries are not stored under the core `schema/` directory.
