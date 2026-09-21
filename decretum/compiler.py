@@ -49,12 +49,16 @@ def _plan_digest(plan: dict[str, Any]) -> str:
     ).hexdigest()
 
 
-def compile_recipe(
+def compile_execution_contract(
     recipe: dict[str, Any],
     artifact_dir: Path,
     registry_path: Path | None = DEFAULT_PROVIDER_REGISTRY,
 ) -> ExecutionContract:
-    """Resolve a recipe and produce a portable contract for an external harness runtime."""
+    """Compile an ExecutionRecipe into a deterministic ExecutionContract.
+
+    This is Decretum's Contract Compiler stage. It resolves execution
+    surfaces and emits the runtime handoff artifact; it never executes work.
+    """
     if registry_path is None:\n        from .domain_packs import resource_for_domain\n        registry_path = resource_for_domain(recipe.get("domain"), "providers") / "provider_registry.yaml"\n    registry_snapshot = snapshot_registry(registry_path, artifact_dir)
     schema_path = None
     resolution = resolve_capabilities(recipe, registry_path)
@@ -175,3 +179,7 @@ def write_contract(contract: ExecutionContract) -> Path:
         encoding="utf-8",
     )
     return path
+
+
+# Backward-compatible API alias. New code should call compile_execution_contract().
+compile_recipe = compile_execution_contract
