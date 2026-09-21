@@ -11,11 +11,6 @@ from jsonschema import Draft202012Validator
 from .capability_registry import canonical_capabilities
 from .profile_registry import DEFAULT_PROFILE_REGISTRY, load_profile_registry, validate_recipe_profiles
 
-SKILL_KINDS = {"analysis", "investigation", "detection", "forensics", "threat_intelligence", "malware_analysis", "vulnerability_research", "cloud_security", "reverse_engineering", "network_analysis", "software_supply_chain", "reporting"}
-SKILL_EXECUTION_MODES = {"codex_native", "shell", "mcp", "script", "analyst_review"}
-TOOLS = {"sysdig", "falco", "tracee", "tetragon", "bpftrace", "bcc", "libbpf", "ebpf_exporter", "strace", "ltrace", "perf", "ftrace", "auditd", "auditbeat", "osquery", "procmon", "psutil", "tcpdump", "tshark", "dumpcap", "wireshark", "zeek", "suricata", "snort", "netsniff_ng", "conntrack", "nftables", "iptables", "ethtool", "ss", "ip", "dig", "resolvectl", "bpftool", "pahole", "opensnoop", "execsnoop", "tcpconnect", "tcplife", "filetop", "biolatency", "runqlat", "funccount", "openssl_trace", "volatility", "rekall", "yara", "clamav", "ghidra", "radare2", "binwalk", "strings", "readelf", "objdump", "lsof", "nsenter", "capsh", "unshare"}
-CAPABILITY_KINDS = {"artifact", "filesystem", "process", "network", "identity", "cloud", "container", "instrumentation", "analysis", "reporting", "compute"}
-CAPABILITY_RISKS = {"read", "observe", "collect", "execute", "write", "privileged", "network_access"}
 
 PROVIDER_INTERFACE_TYPES = {"mcp", "api", "tool"}
 HARNESS_OPERATIONS = {"provision", "implement_capabilities", "execute", "orchestrate", "collect_evidence", "researcher_interaction"}
