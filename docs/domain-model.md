@@ -41,7 +41,7 @@ domains/
     recipes/
 ```
 
-The repository currently carries the security-research reference schema and registries at the top level for compatibility. The architecture can evolve toward explicit domain-pack boundaries without coupling the compiler to one domain.
+Each domain pack is independently versioned and installable. The core schema directory contains only domain-neutral artifact schemas; domain capability/provider/profile registries live inside their respective packs.
 
 ## Recipe vs profile
 
