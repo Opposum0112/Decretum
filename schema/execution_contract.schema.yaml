@@ -27,6 +27,19 @@ properties:
   intent:
     type: object
     required: [id, name, objective]
+  capability_plan:
+    type: array
+    items:
+      type: object
+      required: [capability, status]
+      properties:
+        capability: {type: string}
+        status: {type: string}
+        provider: {type: [string, 'null']}
+        interface: {type: [string, 'null']}
+        harnesses: {type: array, items: {type: string}}
+        invocation: {type: object}
+        integrations: {type: array, items: {type: string}}
   capabilities:
     type: array
     items: {type: string}
