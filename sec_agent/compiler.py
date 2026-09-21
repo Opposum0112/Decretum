@@ -1,9 +1,8 @@
 """Compile capability recipes into harness-neutral execution contracts.
 
 Decretum compiles and stops at the handoff boundary. It does not execute
-experiments, run a harness, manage researcher interaction, or persist findings.
-Those responsibilities belong to the external harness runtime and its research
-store.
+execution workloads, run a harness, manage interaction, or persist state.
+Those responsibilities belong to the external harness runtime and its external store.
 """
 from __future__ import annotations
 
@@ -57,7 +56,7 @@ def compile_recipe(
 ) -> ExecutionContract:
     """Resolve a recipe and produce a portable contract for an external harness runtime."""
     registry_snapshot = snapshot_registry(registry_path, artifact_dir)
-    schema_path = Path(__file__).resolve().parent.parent / "schema" / "sec_research_metamodel.yaml" if recipe.get("domain", "security_research") == "security_research" else None
+    schema_path = None
     resolution = resolve_capabilities(recipe, registry_path)
     recipe_canonical = {k: v for k, v in recipe.items() if not k.startswith("_")}
     recipe_digest = hashlib.sha256(json.dumps(recipe_canonical, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
@@ -87,14 +86,11 @@ def compile_recipe(
     body: dict[str, Any] = {
         "apiVersion": "decretum.dev/v1",
         "kind": "ExecutionContract",
-        "domain": recipe.get("domain", "security_research"),
+        "domain": recipe.get("domain", "general"),
         "intent": {
             "id": recipe["id"],
             "name": recipe["name"],
             "objective": recipe["objective"],
-        },
-        "compatibility": {
-            "legacy_kind": "ResearchExecutionContract",
         },
         "contract_version": "5",
         "contract_id": "",
@@ -146,14 +142,6 @@ def compile_recipe(
         "compilation_manifest": {"artifact": "compilation-manifest.json"},
     }
 
-    if recipe.get("domain", "security_research") == "security_research":
-        body["research"] = {
-            "id": recipe["id"],
-            "name": recipe["name"],
-            "version": recipe["version"],
-            "objective": recipe["objective"],
-        }
-
     source = Path(recipe.get("_source_path", "recipe.yaml"))
     manifest = create_manifest(source, schema_path, registry_path, artifact_dir) if source.exists() and schema_path else None
     if manifest:
@@ -174,7 +162,7 @@ def compile_recipe(
 def write_contract(contract: ExecutionContract) -> Path:
     """Write only the compiled handoff artifact; never execute it."""
     contract.artifact_dir.mkdir(parents=True, exist_ok=True)
-    path = contract.artifact_dir / "research-contract.json"
+    path = contract.artifact_dir / "execution-contract.json"
     path.write_text(
         json.dumps(contract.contract, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
