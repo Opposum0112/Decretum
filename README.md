@@ -95,6 +95,19 @@ Examples:
 
 A domain pack contributes capabilities, schemas, recipes, profiles and provider metadata. It does not change the core resolver/compiler semantics.
 
+### Install a domain pack
+
+Domain packs are independent Python packages:
+
+```bash
+uv pip install -e packages/decretum-software-engineering
+# or
+uv pip install -e packages/decretum-security-research
+decretum spec packs
+```
+
+The core package contains no security-research capability/provider/profile registry. The installed pack supplies those resources through the `decretum.domain_packs` entry point.
+
 ## Why structured contracts instead of broad markdown specifications?
 
 Markdown is excellent for human authoring. It is not by itself a deterministic execution interface. Decretum therefore treats `spec.md` as a frontend, not as the execution boundary.
@@ -232,11 +245,12 @@ Discovery can propose a capability, but it cannot silently mutate canonical sema
 git clone https://github.com/Opposum0112/Decretum.git
 cd Decretum
 uv sync
-decretum capabilities discover
-decretum spec compile spec.md --output recipe.yaml
+uv pip install -e packages/decretum-software-engineering
+decretum spec packs
+decretum spec compile examples/spec.md --output recipe.yaml
 decretum validate recipe.yaml
-decretum resolve recipes/<recipe>.yaml
-decretum compile recipes/<recipe>.yaml
+decretum resolve recipe.yaml
+decretum compile recipe.yaml
 ```
 
 Nothing in Decretum's validate/resolve/compile path executes the work.
