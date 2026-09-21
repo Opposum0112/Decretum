@@ -62,7 +62,7 @@ Human spec.md
   +--> optional human-friendly frontend
   |
   v
-Spec Compiler
+Spec Execution Contract Compiler
   |
   +--> produces structured ExecutionRecipe
 
@@ -86,7 +86,7 @@ Resolver
   |
   +--> binds each required capability to provider, integration, harness and invocation
 
-Compiler
+Execution Contract Compiler
   |
   +--> compiles the validated Recipe into a portable Execution Contract
 ```
@@ -97,7 +97,7 @@ The same recipe can be compiled against different profiles and provider availabi
 
 ```
 spec.md (optional)
-  -> Spec Compiler
+  -> Spec Execution Contract Compiler
   -> ExecutionRecipe
   -> validate / resolve
   -> Execution Contract
@@ -182,7 +182,7 @@ The preferred compilation pipeline is:
     spec.md
        |
        v
-    Spec Compiler
+    Spec Execution Contract Compiler
        |
        v
     ExecutionRecipe
@@ -229,9 +229,18 @@ Domain Packs are the extension mechanism for domain-specific semantics. A pack i
     ExecutionRecipe
           |
           v
-    Generic Decretum Resolver / Compiler
+    Generic Decretum Resolver / Execution Contract Compiler
           |
           v
     Execution Contract
 
 This keeps new domains composable and reviewable while preventing domain-specific logic from leaking into the core compiler.
+
+
+## Two-stage compilation boundary
+
+Decretum separates authoring compilation from execution-contract compilation:
+
+`spec.md` → **Spec Compiler** → `ExecutionRecipe` → **Execution Contract Compiler** → `ExecutionContract` → external runtime.
+
+The **Execution Contract Compiler** is core compiler logic. `ExecutionContract` is only its deterministic output artifact; it does not contain compiler logic and is not a runtime.
