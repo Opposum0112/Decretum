@@ -1,0 +1,19 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://decretum.dev/schema/specification
+title: Canonical Specification
+type: object
+required: [apiVersion, kind, objective]
+properties:
+  apiVersion: {const: decretum.dev/v1}
+  kind: {const: Specification}
+  domain: {type: string}
+  objective: {type: string}
+  capabilities: {type: array, items: {type: string}}
+  inputs: {type: array, items: {type: string}}
+  outputs: {type: array, items: {type: string}}
+  profiles: {type: object}
+  policy: {type: object}
+  evidence: {type: object}
+  completion: {type: object}
+  experiments: {type: array}
+additionalProperties: true
