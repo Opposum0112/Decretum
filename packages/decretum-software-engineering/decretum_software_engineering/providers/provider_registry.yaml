@@ -1,0 +1,18 @@
+apiVersion: decretum.dev/v1
+kind: CapabilityProviderRegistry
+version: "1.0"
+providers:
+  local-process:
+    interface: {type: tool, executable: shell}
+    capabilities: [source.read, source.modify, test.execute, process.execute]
+harnesses:
+  codex:
+    kind: agent
+    supported_interfaces: [tool]
+    operations: [provision, implement_capabilities, execute, orchestrate, collect_evidence, researcher_interaction]
+  goose:
+    kind: agent
+    supported_interfaces: [tool]
+    operations: [provision, implement_capabilities, execute, orchestrate, collect_evidence, researcher_interaction]
+integrations: {}
+models: {}
