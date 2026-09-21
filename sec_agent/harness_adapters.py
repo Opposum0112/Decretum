@@ -17,7 +17,7 @@ class RegistryHarnessAdapter(HarnessAdapter):
         self.id = harness_id
 
     def supports(self, contract: dict[str, Any]) -> bool:
-        if contract.get("kind") not in {"ExecutionContract", "ResearchExecutionContract"}:
+        if contract.get("kind") not in {"ExecutionContract"}:
             return False
         if contract.get("handoff", {}).get("target") != "external_harness_runtime":
             return False
