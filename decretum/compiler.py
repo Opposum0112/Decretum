@@ -15,7 +15,7 @@ from typing import Any
 from .manifest import create_manifest
 from .registry_snapshot import snapshot_registry
 from .resolver import resolve_capabilities
-from .validator import DEFAULT_PROVIDER_REGISTRY, required_capabilities
+from .validator import DEFAULT_PROVIDER_REGISTRY, required_capabilities, validate_execution_contract_schema
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,6 +66,9 @@ def compile_recipe(
         "entrypoints": [s["id"] for s in steps if not s["depends_on"]],
         "execution_order": [s["id"] for s in steps],
     }
+    if resolution.get("status") != "ready":
+        raise ValueError("recipe cannot be compiled: capability resolution is not ready")
+
     execution_plan = resolution.get("experiment_plan", [])
     resolution_audit = {
         "status": resolution.get("status"),
@@ -95,6 +98,7 @@ def compile_recipe(
         "contract_version": "5",
         "contract_id": "",
         "capabilities": sorted(required_capabilities(recipe, registry_path)),
+        "capability_plan": resolution.get("capability_plan", []),
         "recipe_digest": recipe_digest,
         "spec_source": recipe.get("_spec_source", {}),
         "profiles": resolution.get("profiles", {}),
@@ -156,6 +160,9 @@ def compile_recipe(
         separators=(",", ":"),
     ).encode()
     body["contract_id"] = hashlib.sha256(canonical).hexdigest()[:16]
+    schema_errors = validate_execution_contract_schema(body)
+    if schema_errors:
+        raise ValueError("compiled execution contract failed schema validation: " + "; ".join(schema_errors))
     return ExecutionContract(body["contract_id"], body, artifact_dir)
 
 
