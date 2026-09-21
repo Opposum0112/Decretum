@@ -1,0 +1,8 @@
+apiVersion: decretum.dev/v1
+kind: DomainPack
+id: example-domain
+name: Example Domain
+version: 1.0.0
+domains:
+  - example_domain
+description: Example contributor domain pack.
