@@ -52,10 +52,10 @@ def _plan_digest(plan: dict[str, Any]) -> str:
 def compile_recipe(
     recipe: dict[str, Any],
     artifact_dir: Path,
-    registry_path: Path = DEFAULT_PROVIDER_REGISTRY,
+    registry_path: Path | None = DEFAULT_PROVIDER_REGISTRY,
 ) -> ExecutionContract:
     """Resolve a recipe and produce a portable contract for an external harness runtime."""
-    registry_snapshot = snapshot_registry(registry_path, artifact_dir)
+    if registry_path is None:\n        from .domain_packs import resource_for_domain\n        registry_path = resource_for_domain(recipe.get("domain"), "providers") / "provider_registry.yaml"\n    registry_snapshot = snapshot_registry(registry_path, artifact_dir)
     schema_path = None
     resolution = resolve_capabilities(recipe, registry_path)
     recipe_canonical = {k: v for k, v in recipe.items() if not k.startswith("_")}
