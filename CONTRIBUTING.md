@@ -72,3 +72,8 @@ Use a focused title and explain:
 - documentation impact
 
 Small, composable changes are easier to review.
+
+
+## Contributing a Domain Pack
+
+Domain-specific functionality should normally be contributed as an installable Domain Pack rather than by adding domain-specific conditionals to the Decretum core. A pack can contain schemas, capabilities, profiles, provider/integration metadata, recipes, examples and documentation. See [Domain Packs](docs/domain-packs.md). Validate locally with `decretum spec validate-pack ./my-pack` before opening a pull request.
