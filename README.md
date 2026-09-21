@@ -82,7 +82,7 @@ The compiler core is domain-neutral. Domain-specific semantics live in registrie
 
 Examples:
 
-- **Security research** — malware, network, forensics, detection and cloud investigation
+- **Technical domains** — malware, network, forensics, detection and cloud investigation
 - **Software engineering** — source changes, dependencies, tests, builds and containers
 - **Infrastructure** — VM, container, network and deployment requirements
 - **Data engineering** — datasets, transforms, validation and artifacts
@@ -318,7 +318,7 @@ Decretum/
 │   ├── capability_registry.yaml
 │   ├── provider_registry.yaml
 │   ├── profile_registry.yaml
-│   └── sec_research_metamodel.yaml   # reference security domain
+│   └── execution_contract.schema.yaml
 ├── examples/
 │   └── spec.md
 ├── recipes/
