@@ -373,3 +373,34 @@ See [CONTRIBUTORS.md](CONTRIBUTORS.md) and [AI_ASSISTANCE.md](AI_ASSISTANCE.md) 
 
 For general project questions or bug reports, you may contact the maintainer at **maamtest18@gmail.com**. Please do not send passwords, API keys, credentials, private data, or undisclosed security vulnerabilities by email; use the security reporting process for vulnerabilities.
 
+
+
+## Domain Packs
+
+Decretum is extensible through **Domain Packs**: installable Python packages that contribute domain schemas, canonical capabilities, profiles, provider metadata, recipes and documentation without modifying the domain-neutral core.
+
+```text
+Contributor
+   |
+   v
+Domain Pack (Python package)
+   |
+   +-- schemas
+   +-- capabilities
+   +-- profiles
+   +-- recipes
+   +-- docs
+   |
+   v
+Decretum discovery / validation
+   |
+   v
+Recipe -> Resolution -> Execution Contract
+```
+
+A contributor can validate and inspect packs with:
+
+    decretum spec validate-pack ./my-domain-pack
+    decretum spec packs
+
+See docs/domain-packs.md for the package contract and contributor workflow.
