@@ -55,7 +55,7 @@ def resolve_capabilities(
     if errors:
         return {"status": "invalid_registry", "errors": errors, "capabilities": []}
 
-    registry = load_provider_registry(str(registry_path))
+    registry = load_provider_registry(registry_path, recipe.get("domain"))
     profiles = resolve_recipe_profiles(recipe, profile_path)
     infrastructure = profiles["profiles"].get("infrastructure", {})
     instrumentation = profiles["profiles"].get("instrumentation", {})
