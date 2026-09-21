@@ -27,7 +27,7 @@ class GenericHarnessAdapter(HarnessAdapter):
 
     def supports(self, contract: dict[str, Any]) -> bool:
         return (
-            contract.get("kind") in {"ExecutionContract", "ResearchExecutionContract"}
+            contract.get("kind") in {"ExecutionContract"}
             and contract.get("handoff", {}).get("target") == "external_harness_runtime"
         )
 
