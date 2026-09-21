@@ -38,7 +38,8 @@ Recipe       = what should be done
 Profile      = execution characteristics and preferences
 Registry     = available implementations
 Resolver     = deterministic capability binding
-Compiler     = portable contract generation
+Spec Compiler = spec.md → ExecutionRecipe
+Contract Compiler = ExecutionRecipe → ExecutionContract
 Harness      = actual execution and interaction
 Store        = persistent execution/research memory
 ```
@@ -128,6 +129,9 @@ Schema validation
     |
     v
 validated resolution
+    |
+    v
+Execution Contract Compiler
     |
     v
 portable execution contract
