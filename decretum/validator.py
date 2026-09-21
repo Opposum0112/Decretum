@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from jsonschema import Draft202012Validator
 
 from .capability_registry import canonical_capabilities
 from .profile_registry import DEFAULT_PROFILE_REGISTRY, load_profile_registry, validate_recipe_profiles
@@ -18,7 +19,12 @@ CAPABILITY_RISKS = {"read", "observe", "collect", "execute", "write", "privilege
 
 PROVIDER_INTERFACE_TYPES = {"mcp", "api", "tool"}
 HARNESS_OPERATIONS = {"provision", "implement_capabilities", "execute", "orchestrate", "collect_evidence", "researcher_interaction"}
-DEFAULT_PROVIDER_REGISTRY = Path(__file__).resolve().parents[1] / "schema" / "provider_registry.yaml"
+DEFAULT_SCHEMA_DIR = Path(__file__).resolve().parents[1] / "schema"
+DEFAULT_PROVIDER_REGISTRY = DEFAULT_SCHEMA_DIR / "provider_registry.yaml"
+RECIPE_SCHEMA = DEFAULT_SCHEMA_DIR / "recipe.schema.yaml"
+SPECIFICATION_SCHEMA = DEFAULT_SCHEMA_DIR / "specification.schema.yaml"
+CAPABILITY_IMPLEMENTATION_SCHEMA = DEFAULT_SCHEMA_DIR / "capability_implementation.schema.yaml"
+EXECUTION_CONTRACT_SCHEMA = DEFAULT_SCHEMA_DIR / "execution_contract.schema.yaml"
 
 @lru_cache(maxsize=8)
 def load_provider_registry(path: str) -> dict[str, Any]:
@@ -118,6 +124,28 @@ def registry_errors(registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str
             errors.append(f"model {model_id!r} must have kind 'llm'")
     return errors
 
+def validate_document_schema(document: dict[str, Any], schema_path: Path) -> list[str]:
+    """Validate a Decretum artifact against its domain-neutral JSON Schema."""
+    try:
+        schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        Draft202012Validator(schema).check_schema(schema)
+        errors = sorted(Draft202012Validator(schema).iter_errors(document), key=lambda e: list(e.path))
+        return [f"{schema_path.name}: {'/'.join(map(str, e.path)) or '<root>'}: {e.message}" for e in errors]
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        return [f"{schema_path.name}: schema unavailable: {exc}"]
+
+def validate_recipe_schema(recipe: dict[str, Any]) -> list[str]:
+    return validate_document_schema(recipe, RECIPE_SCHEMA)
+
+def validate_specification_schema(specification: dict[str, Any]) -> list[str]:
+    return validate_document_schema(specification, SPECIFICATION_SCHEMA)
+
+def validate_capability_implementation_schema(implementation: dict[str, Any]) -> list[str]:
+    return validate_document_schema(implementation, CAPABILITY_IMPLEMENTATION_SCHEMA)
+
+def validate_execution_contract_schema(contract: dict[str, Any]) -> list[str]:
+    return validate_document_schema(contract, EXECUTION_CONTRACT_SCHEMA)
+
 def load_recipe(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise FileNotFoundError(path)
@@ -216,7 +244,8 @@ def preflight(recipe: dict[str, Any]) -> list[str]:
 
 def validate_recipe(path: Path) -> tuple[dict[str, Any], list[str], list[str]]:
     recipe = load_recipe(path)
-    errors = structural_validate(recipe)
+    errors = validate_recipe_schema(recipe)
+    errors.extend(structural_validate(recipe))
     errors.extend(validate_experiment_graph(recipe))
     if not errors:
         errors.extend(validate_capability_providers(recipe))
