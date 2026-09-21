@@ -1,0 +1,31 @@
+apiVersion: decretum.dev/v1
+kind: CapabilityRegistry
+version: "1.0"
+capabilities:
+  source.read:
+    id: source.read
+    name: Read source
+    kind: artifact
+    risk: read
+    description: Read source files required by a software engineering task.
+  source.modify:
+    id: source.modify
+    name: Modify source
+    kind: artifact
+    risk: write
+    requires_approval: true
+    description: Modify source files within the authorized workspace.
+  test.execute:
+    id: test.execute
+    name: Execute tests
+    kind: process
+    risk: execute
+    requires_approval: true
+    description: Execute project validation or test commands.
+  process.execute:
+    id: process.execute
+    name: Execute a process
+    kind: process
+    risk: execute
+    requires_approval: true
+    description: Execute an authorized software workload.
