@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from sec_agent.spec_compiler import compile_spec
+from decretum.spec_compiler import compile_spec
 
 SPEC = Path("examples/spec.md")
 
