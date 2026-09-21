@@ -17,7 +17,7 @@ ID_RE = re.compile(r"^[a-z][a-z0-9_-]*(\.[a-z0-9_-]+)+$")
 
 
 def load_capability_registry(path: Path | None = DEFAULT_CAPABILITY_REGISTRY, domain: str | None = None) -> dict[str, Any]:
-    if path is None:\n        from .domain_packs import resource_for_domain\n        path = resource_for_domain(domain or "security_research", "capabilities") / "capability_registry.yaml"\n    if path.is_dir(): path = path / "capability_registry.yaml"\n    if not path.exists():
+    if path is None:\n        from .domain_packs import resource_for_domain\n        path = resource_for_domain(domain, "capabilities") / "capability_registry.yaml"\n    if path.is_dir(): path = path / "capability_registry.yaml"\n    if not path.exists():
         return {"apiVersion": "decretum.dev/v1", "kind": "CapabilityRegistry", "version": "1.0", "capabilities": {}}
     value = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(value, dict) or not isinstance(value.get("capabilities"), dict):
