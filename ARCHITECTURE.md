@@ -58,6 +58,15 @@ A domain pack can add semantics without turning the core into a domain-specific 
 ## Structured intent model
 
 ```
+Human spec.md
+  |
+  +--> optional human-friendly frontend
+  |
+  v
+Spec Compiler
+  |
+  +--> produces structured ExecutionRecipe
+
 Schema
   |
   +--> defines semantic vocabulary
@@ -80,7 +89,7 @@ Resolver
 
 Compiler
   |
-  +--> emits portable Execution Contract
+  +--> compiles the validated Recipe into a portable Execution Contract
 ```
 
 The same recipe can be compiled against different profiles and provider availability without changing its semantic intent.
@@ -88,14 +97,16 @@ The same recipe can be compiled against different profiles and provider availabi
 ## Handoff
 
 ```
-Recipe
-  -> Decretum
+spec.md (optional)
+  -> Spec Compiler
+  -> ExecutionRecipe
+  -> validate / resolve
   -> Execution Contract
   -> External Harness / Agent Runtime
   -> External Store
 ```
 
-The contract is the interoperability boundary.
+The Recipe is the logical execution plan. The Execution Contract is the resolved, deterministic and enforceable handoff artifact. The contract is the interoperability boundary.
 
 ## Iterative execution loop
 
@@ -163,3 +174,41 @@ Harness/runtime projects should implement:
 ![Decretum architecture](docs/assets/decretum-architecture.svg)
 
 The diagram shows the intended boundary: Decretum compiles intent into a deterministic contract; the external agent or harness owns reasoning and execution, while persistent state remains external.
+
+
+## Spec -> Recipe -> Contract boundary
+
+The preferred compilation pipeline is:
+
+    spec.md
+       |
+       v
+    Spec Compiler
+       |
+       v
+    ExecutionRecipe
+       |
+       v
+    Schema Validation
+       |
+       v
+    Capability / Provider / Integration / Harness Resolution
+       |
+       v
+    Recipe
+       |
+       v
+    Execution Contract
+       |
+       v
+    External Harness / Agent Runtime
+
+`spec.md` is an authoring format for humans. It is not treated as an executable contract and the compiler does not infer new canonical capabilities from arbitrary prose.
+
+The Recipe is the declarative execution plan: it describes the intended outcome, capabilities, inputs, outputs, profiles and step dependencies.
+
+The Execution Contract is compiled only after the Recipe is validated and resolved. It records concrete resolution, readiness, policy, provenance, the Recipe digest and the handoff boundary.
+
+This separation permits the same Recipe to produce different contracts when provider, harness or host availability changes while preserving the semantic intent of the Recipe.
+
+If a runtime needs a new capability or changed requirement, the flow returns to the Recipe/Decretum compilation boundary rather than silently mutating the existing contract.
