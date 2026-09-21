@@ -20,6 +20,8 @@ from .validator import validate_recipe
 
 app = typer.Typer(help="Decretum: domain-neutral declarative execution compiler")
 capabilities_app = typer.Typer(help="Discover and inspect capability execution surfaces.")
+spec_app = typer.Typer(help="Compile human-authored Markdown specifications.")
+app.add_typer(spec_app, name="spec")
 app.add_typer(capabilities_app, name="capabilities")
 console = Console()
 
@@ -97,7 +99,7 @@ def approve_capability(
 
 
 
-@app.command("spec-compile")
+@spec_app.command("compile")
 def spec_compile(spec: Path, output: Path = Path("recipe.yaml")) -> None:
     """Compile a human-authored Markdown spec into an ExecutionRecipe."""
     from .spec_compiler import compile_spec, write_recipe
