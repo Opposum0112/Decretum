@@ -16,9 +16,9 @@
 
 # Decretum
 
-> **Decretum turns structured intent into a deterministic execution contract for agents and harnesses.**
+> **Decretum turns human intent into a validated Recipe and deterministic Execution Contract for agents and harnesses.**
 
-Decretum is a **domain-neutral Declarative Execution Compiler**. It combines schemas, recipes, profiles, provider/integration registries, discovery, validation, policy, and deterministic resolution to produce a portable **Execution Contract**.
+Decretum is a **domain-neutral Declarative Execution Compiler**. It can accept a human-friendly `spec.md`, compile it into a structured **ExecutionRecipe**, validate and resolve its capabilities, then compile that Recipe into a portable **Execution Contract**.
 
 Security research is Decretum's reference domain, not its architectural boundary. The same compiler model can describe software engineering, infrastructure automation, data engineering, incident response, scientific experiments, and other reproducible technical work.
 
@@ -92,15 +92,18 @@ A domain pack contributes capabilities, schemas, recipes, profiles and provider 
 
 ## Why structured contracts instead of broad markdown specifications?
 
-Markdown is excellent for explanation. It is not a deterministic execution interface.
+Markdown is excellent for human authoring. It is not by itself a deterministic execution interface. Decretum therefore treats `spec.md` as a frontend, not as the execution boundary.
 
 Decretum separates:
 
 ```
-human intent
+spec.md / human intent
     |
     v
-structured schema + recipe + profile
+Spec Compiler
+    |
+    v
+structured schema + Recipe + Profile
     |
     v
 validated resolution
@@ -184,17 +187,16 @@ The recipe does not contain Lima/Docker lifecycle, MCP implementation, agent pro
 
 ## End-to-end workflow
 
-1. Define structured intent.
-2. Reference canonical capabilities.
-3. Select profiles/preferences.
-4. Validate the recipe.
-5. Discover available execution surfaces.
-6. Resolve capability → provider → integration → harness.
-7. Check readiness and policy.
-8. Compile the Execution Contract.
-9. Hand the contract to the external harness.
-10. The harness executes, interacts, and persists its state.
-11. If requirements change, return to Decretum and compile a new contract.
+1. Author `spec.md` or define a structured Recipe directly.
+2. Compile `spec.md` into an `ExecutionRecipe` when Markdown is used.
+3. Validate the Recipe against the domain schema and canonical capabilities.
+4. Discover available execution surfaces.
+5. Resolve capability → provider → integration → harness.
+6. Check readiness and policy.
+7. Compile the Recipe into the deterministic Execution Contract.
+8. Hand the contract to the external harness.
+9. The harness executes, interacts, and persists its state.
+10. If requirements change, return to Decretum and produce a new Recipe/Contract pair.
 
 **Decretum does not perform steps 9–10.**
 
@@ -223,7 +225,8 @@ git clone https://github.com/Opposum0112/Decretum.git
 cd Decretum
 uv sync
 decretum capabilities discover
-decretum validate recipes/<recipe>.yaml
+decretum spec-compile spec.md --output recipe.yaml
+decretum validate recipe.yaml
 decretum resolve recipes/<recipe>.yaml
 decretum compile recipes/<recipe>.yaml
 ```
@@ -282,6 +285,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md), [docs/execution-contract.md](docs/execut
 
 - [Introduction](INTRO.md) — problem, positioning and workflow
 - [Architecture](ARCHITECTURE.md) — system boundary and invariants
+- [Markdown Spec Compiler](docs/spec-compiler.md) — human-friendly specification frontend
 - [Execution Contract](docs/execution-contract.md) — interoperability specification
 - [Domain model](docs/domain-model.md) — core concepts and domain packs
 - [Contributing](CONTRIBUTING.md) — development and extension rules
@@ -315,6 +319,8 @@ Decretum/
 │   ├── provider_registry.yaml
 │   ├── profile_registry.yaml
 │   └── sec_research_metamodel.yaml   # reference security domain
+├── examples/
+│   └── spec.md
 ├── recipes/
 ├── docs/
 │   └── domain-model.md
