@@ -6,29 +6,29 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from jsonschema import Draft202012Validator
 
 from .capability_registry import canonical_capabilities
 from .profile_registry import DEFAULT_PROFILE_REGISTRY, load_profile_registry, validate_recipe_profiles
 
-ROLE_VALUES = {"threat_researcher", "supply_chain_auditor", "detection_engineer", "vulnerability_exploit_researcher", "malware_researcher", "threat_intelligence_researcher", "cloud_security_researcher", "forensics_researcher", "vulnerability_researcher", "security_architect"}
-SKILL_KINDS = {"analysis", "investigation", "detection", "forensics", "threat_intelligence", "malware_analysis", "vulnerability_research", "cloud_security", "reverse_engineering", "network_analysis", "software_supply_chain", "reporting"}
-SKILL_EXECUTION_MODES = {"codex_native", "shell", "mcp", "script", "analyst_review"}
-TOOLS = {"sysdig", "falco", "tracee", "tetragon", "bpftrace", "bcc", "libbpf", "ebpf_exporter", "strace", "ltrace", "perf", "ftrace", "auditd", "auditbeat", "osquery", "procmon", "psutil", "tcpdump", "tshark", "dumpcap", "wireshark", "zeek", "suricata", "snort", "netsniff_ng", "conntrack", "nftables", "iptables", "ethtool", "ss", "ip", "dig", "resolvectl", "bpftool", "pahole", "opensnoop", "execsnoop", "tcpconnect", "tcplife", "filetop", "biolatency", "runqlat", "funccount", "openssl_trace", "volatility", "rekall", "yara", "clamav", "ghidra", "radare2", "binwalk", "strings", "readelf", "objdump", "lsof", "nsenter", "capsh", "unshare"}
-CAPABILITY_KINDS = {"artifact", "filesystem", "process", "network", "identity", "cloud", "container", "instrumentation", "analysis", "reporting", "compute"}
-CAPABILITY_RISKS = {"read", "observe", "collect", "execute", "write", "privileged", "network_access"}
 
 PROVIDER_INTERFACE_TYPES = {"mcp", "api", "tool"}
 HARNESS_OPERATIONS = {"provision", "implement_capabilities", "execute", "orchestrate", "collect_evidence", "researcher_interaction"}
-DEFAULT_PROVIDER_REGISTRY = Path(__file__).resolve().parents[1] / "schema" / "provider_registry.yaml"
+DEFAULT_SCHEMA_DIR = Path(__file__).resolve().parents[1] / "schema"
+DEFAULT_PROVIDER_REGISTRY = None
+RECIPE_SCHEMA = DEFAULT_SCHEMA_DIR / "recipe.schema.yaml"
+SPECIFICATION_SCHEMA = DEFAULT_SCHEMA_DIR / "specification.schema.yaml"
+CAPABILITY_IMPLEMENTATION_SCHEMA = DEFAULT_SCHEMA_DIR / "capability_implementation.schema.yaml"
+EXECUTION_CONTRACT_SCHEMA = DEFAULT_SCHEMA_DIR / "execution_contract.schema.yaml"
 
 @lru_cache(maxsize=8)
-def load_provider_registry(path: str) -> dict[str, Any]:
-    registry = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+def load_provider_registry(path: str | Path | None, domain: str | None = None) -> dict[str, Any]:
+    if path is None:\n        from .domain_packs import resource_for_domain\n        path = resource_for_domain(domain, "providers") / "provider_registry.yaml"\n    if Path(path).is_dir(): path = Path(path) / "provider_registry.yaml"\n    registry = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     if not isinstance(registry, dict) or not isinstance(registry.get("providers"), dict):
         raise ValueError("provider registry must contain a providers mapping")
     return registry
 
-def validate_provider_registry(registry: dict[str, Any]) -> list[str]:
+def validate_provider_registry(registry: dict[str, Any], capability_registry_path: Path | None = None, domain: str | None = None) -> list[str]:
     errors: list[str] = []
     for provider_id, provider in (registry.get("providers") or {}).items():
         if not isinstance(provider, dict):
@@ -43,7 +43,7 @@ def validate_provider_registry(registry: dict[str, Any]) -> list[str]:
         if not isinstance(capabilities, list) or not capabilities:
             errors.append(f"provider {provider_id!r} requires non-empty capabilities")
         for capability in capabilities or []:
-            if capability not in canonical_capabilities():
+            if capability not in canonical_capabilities(capability_registry_path, domain):
                 errors.append(f"provider {provider_id!r} advertises non-canonical capability {capability!r}")
     return errors
 
@@ -70,12 +70,12 @@ def required_capabilities(recipe: dict[str, Any], registry_path: Path = DEFAULT_
         required.add("process.execute")
     return required
 
-def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str]:
+def validate_capability_providers(recipe: dict[str, Any], registry_path: Path | None = DEFAULT_PROVIDER_REGISTRY, capability_registry_path: Path | None = None) -> list[str]:
     try:
-        registry = load_provider_registry(str(registry_path))
+        registry = load_provider_registry(registry_path, recipe.get("domain"))
     except (OSError, ValueError, yaml.YAMLError) as exc:
         return [f"provider registry unavailable: {exc}"]
-    errors = registry_errors(registry_path)
+    errors = registry_errors(registry_path, capability_registry_path=capability_registry_path, domain=recipe.get("domain"))
     required = required_capabilities(recipe, registry_path)
     index = provider_capability_index(registry)
     for capability in sorted(required):
@@ -83,12 +83,12 @@ def validate_capability_providers(recipe: dict[str, Any], registry_path: Path = 
             errors.append(f"capability {capability!r} has no registered provider (MCP/API/tool)")
     return errors
 
-def registry_errors(registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str]:
+def registry_errors(registry_path: Path | None = DEFAULT_PROVIDER_REGISTRY, capability_registry_path: Path | None = None, domain: str | None = None) -> list[str]:
     try:
-        registry = load_provider_registry(str(registry_path))
+        registry = load_provider_registry(registry_path, domain)
     except (OSError, ValueError, yaml.YAMLError) as exc:
         return [f"provider registry unavailable: {exc}"]
-    errors = validate_provider_registry(registry)
+    errors = validate_provider_registry(registry, capability_registry_path, domain)
     providers = registry.get("providers", {}) or {}
     for integration_id, integration in (registry.get("integrations", {}) or {}).items():
         if not isinstance(integration, dict):
@@ -119,6 +119,28 @@ def registry_errors(registry_path: Path = DEFAULT_PROVIDER_REGISTRY) -> list[str
             errors.append(f"model {model_id!r} must have kind 'llm'")
     return errors
 
+def validate_document_schema(document: dict[str, Any], schema_path: Path) -> list[str]:
+    """Validate a Decretum artifact against its domain-neutral JSON Schema."""
+    try:
+        schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        Draft202012Validator(schema).check_schema(schema)
+        errors = sorted(Draft202012Validator(schema).iter_errors(document), key=lambda e: list(e.path))
+        return [f"{schema_path.name}: {'/'.join(map(str, e.path)) or '<root>'}: {e.message}" for e in errors]
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        return [f"{schema_path.name}: schema unavailable: {exc}"]
+
+def validate_recipe_schema(recipe: dict[str, Any]) -> list[str]:
+    return validate_document_schema(recipe, RECIPE_SCHEMA)
+
+def validate_specification_schema(specification: dict[str, Any]) -> list[str]:
+    return validate_document_schema(specification, SPECIFICATION_SCHEMA)
+
+def validate_capability_implementation_schema(implementation: dict[str, Any]) -> list[str]:
+    return validate_document_schema(implementation, CAPABILITY_IMPLEMENTATION_SCHEMA)
+
+def validate_execution_contract_schema(contract: dict[str, Any]) -> list[str]:
+    return validate_document_schema(contract, EXECUTION_CONTRACT_SCHEMA)
+
 def load_recipe(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise FileNotFoundError(path)
@@ -127,23 +149,17 @@ def load_recipe(path: Path) -> dict[str, Any]:
         raise ValueError("Recipe root must be a YAML mapping")
     return value
 
-def structural_validate(recipe: dict[str, Any]) -> list[str]:
+def structural_validate(recipe: dict[str, Any], capability_registry_path: Path | None = None) -> list[str]:
     errors: list[str] = []
-    domain = recipe.get("domain", "security_research")
     required = {"id", "name", "version", "objective"}
-    if domain == "security_research":
-        required.update({"role", "policy", "evidence", "completion"})
     errors.extend(f"missing required field: {key}" for key in sorted(required - recipe.keys()))
-    if recipe.get("role") not in ROLE_VALUES:
-        errors.append(f"invalid role: {recipe.get('role')!r}")
-
     role_definition = recipe.get("role_definition")
     if role_definition is not None and not isinstance(role_definition, dict):
         errors.append("role_definition must be a mapping")
 
     # Recipe capability_catalog is deprecated as a semantic definition.
     # References must resolve against the canonical registry.
-    canonical = canonical_capabilities()
+    canonical = canonical_capabilities(capability_registry_path, recipe.get("domain"))
     catalog = recipe.get("capability_catalog")
     if catalog is not None:
         if not isinstance(catalog, list):
@@ -167,33 +183,14 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
     if "compute" in recipe or "instrumentation" in recipe:
         errors.append("inline compute/instrumentation configuration is deprecated; use profiles")
 
-    if domain == "security_research":
-        policy = recipe.get("policy")
-        if not isinstance(policy, dict):
-            errors.append("policy must be a mapping")
-        else:
-            for key in ("allow", "deny", "approval_required"):
-                if policy.get(key) is not None and not isinstance(policy[key], list):
-                    errors.append(f"policy.{key} must be a list")
-        evidence = recipe.get("evidence")
-        if not isinstance(evidence, dict):
-            errors.append("evidence must be a mapping")
-        elif not evidence.get("required"):
-            errors.append("evidence.required must be non-empty")
-        completion = recipe.get("completion")
-        if not isinstance(completion, dict):
-            errors.append("completion must be a mapping")
-        elif completion.get("report_required", True) is not True:
-            errors.append("completion.report_required must remain true")
-
     return errors
 
-def validate_experiment_graph(recipe: dict[str, Any]) -> list[str]:
+def validate_experiment_graph(recipe: dict[str, Any], capability_registry_path: Path | None = None) -> list[str]:
     errors: list[str] = []
     steps = recipe.get("experiments", []) or []
     if not isinstance(steps, list):
         return ["experiments must be a list"]
-    declared = set(canonical_capabilities())
+    declared = set(canonical_capabilities(capability_registry_path, recipe.get("domain")))
     step_ids = {x.get("id") for x in steps if isinstance(x, dict) and x.get("id")}
     graph: dict[str, list[str]] = {}
     for step in steps:
@@ -234,16 +231,22 @@ def validate_experiment_graph(recipe: dict[str, Any]) -> list[str]:
         visit(node)
     return errors
 
-def preflight(recipe: dict[str, Any]) -> list[str]:
-    profile_errors = validate_recipe_profiles(recipe, DEFAULT_PROFILE_REGISTRY)
+def preflight(recipe: dict[str, Any], profile_path: Path | None = DEFAULT_PROFILE_REGISTRY) -> list[str]:
+    profile_errors = validate_recipe_profiles(recipe, profile_path)
     if profile_errors:
         return [f"PROFILE: {item}" for item in profile_errors]
     return []
 
-def validate_recipe(path: Path) -> tuple[dict[str, Any], list[str], list[str]]:
+def validate_recipe(path: Path, domain_pack_path: Path | None = None) -> tuple[dict[str, Any], list[str], list[str]]:
     recipe = load_recipe(path)
-    errors = structural_validate(recipe)
-    errors.extend(validate_experiment_graph(recipe))
+    provider_path = profile_path = capability_path = None
+    if domain_pack_path:
+        provider_path = domain_pack_path / "providers" / "provider_registry.yaml"
+        profile_path = domain_pack_path / "profiles" / "profile_registry.yaml"
+        capability_path = domain_pack_path / "capabilities" / "capability_registry.yaml"
+    errors = validate_recipe_schema(recipe)
+    errors.extend(structural_validate(recipe, capability_path))
+    errors.extend(validate_experiment_graph(recipe, capability_path))
     if not errors:
-        errors.extend(validate_capability_providers(recipe))
-    return recipe, errors, preflight(recipe) if not errors else []
+        errors.extend(validate_capability_providers(recipe, provider_path, capability_path))
+    return recipe, errors, preflight(recipe, profile_path) if not errors else []

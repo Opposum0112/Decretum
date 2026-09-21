@@ -1,0 +1,35 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://decretum.dev/schema/recipe
+title: ExecutionRecipe
+type: object
+required: [apiVersion, kind, id, name, version, objective]
+properties:
+  apiVersion: {const: decretum.dev/v1}
+  kind: {const: ExecutionRecipe}
+  domain: {type: string}
+  id: {type: string}
+  name: {type: string}
+  version: {type: string}
+  objective: {type: string}
+  capabilities: {type: array, items: {type: string}}
+  inputs: {type: array, items: {type: string}}
+  outputs: {type: array, items: {type: string}}
+  profiles: {type: object}
+  policy: {type: object}
+  evidence: {type: object}
+  completion: {type: object}
+  experiments:
+    type: array
+    items:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+        objective: {type: string}
+        capability: {type: string}
+        capabilities: {type: array, items: {type: string}}
+        depends_on: {type: array, items: {type: string}}
+        inputs: {type: array, items: {type: string}}
+        outputs: {type: array, items: {type: string}}
+        approval_required: {type: boolean}
+additionalProperties: true

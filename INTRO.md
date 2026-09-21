@@ -102,9 +102,9 @@ Structured Intent
       v
    DECRETUM
       |
-      +-- schema/capabilities
-      +-- profiles
-      +-- provider registry
+      +-- core schemas
+      +-- installed domain packs
+      +-- capability/provider/profile resources
       +-- discovery
       +-- validation
       +-- resolution

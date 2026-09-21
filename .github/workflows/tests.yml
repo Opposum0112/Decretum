@@ -26,6 +26,8 @@ jobs:
             uv --version
             echo "== Sync =="
             uv sync --group dev
+            echo "== Domain packs =="
+            uv pip install -e packages/decretum-security-research -e packages/decretum-software-engineering
             echo "== Tests =="
             uv run pytest -q
             echo "== Lint =="

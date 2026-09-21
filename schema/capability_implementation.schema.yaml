@@ -1,0 +1,15 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://decretum.dev/schema/capability-implementation
+title: Capability Implementation
+type: object
+required: [capability, provider, interface, harnesses]
+properties:
+  capability: {type: string}
+  provider: {type: string}
+  interface: {type: object}
+  harnesses: {type: array, items: {type: string}}
+  integrations: {type: array, items: {type: string}}
+  execution_modes: {type: array, items: {type: string}}
+  invocation: {type: object}
+  constraints: {type: object}
+additionalProperties: true

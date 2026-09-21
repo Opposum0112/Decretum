@@ -14,12 +14,15 @@ from rich.table import Table
 
 from .capability_discovery import discover_capability_surfaces, write_candidate_yaml, write_discovery_report
 from .capability_registry import canonical_capabilities, candidate, promote_capability
-from .compiler import compile_recipe, write_contract
+from .compiler import compile_execution_contract, write_contract
+from .domain_packs import installed_pack_summary, validate_pack_directory
 from .resolver import resolve_capabilities
 from .validator import validate_recipe
 
 app = typer.Typer(help="Decretum: domain-neutral declarative execution compiler")
 capabilities_app = typer.Typer(help="Discover and inspect capability execution surfaces.")
+spec_app = typer.Typer(help="Compile human-authored Markdown specifications.")
+app.add_typer(spec_app, name="spec")
 app.add_typer(capabilities_app, name="capabilities")
 console = Console()
 
@@ -61,6 +64,7 @@ def list_capabilities() -> None:
 @capabilities_app.command("approve")
 def approve_capability(
     capability_id: str = typer.Argument(...),
+    domain: str = typer.Option(..., "--domain", help="Domain provided by the installed domain pack."),
     candidate_file: Path = typer.Option(Path("artifacts/capability-discovery/capability-candidates.yaml"), "--candidate"),
     kind: str = typer.Option(..., "--kind"),
     risk: str = typer.Option(..., "--risk"),
@@ -88,12 +92,44 @@ def approve_capability(
         "allowed_execution_modes": allowed_execution_mode,
     }
     try:
-        promote_capability(spec)
+        promote_capability(spec, domain=domain)
     except ValueError as exc:
         console.print(f"[red]ERROR[/red] {exc}")
         raise typer.Exit(1) from exc
     console.print(f"[green]Approved canonical capability:[/green] {capability_id}")
     console.print("Provider implementations still require explicit registration.")
+
+
+
+
+@spec_app.command("packs")
+def list_domain_packs() -> None:
+    """List installed Decretum domain packs."""
+    console.print_json(json.dumps(installed_pack_summary()))
+
+@spec_app.command("validate-pack")
+def validate_domain_pack(path: Path) -> None:
+    """Validate a local domain-pack directory before packaging."""
+    errors = validate_pack_directory(path)
+    if errors:
+        for item in errors:
+            console.print(f"[red]ERROR[/red] {item}")
+        raise typer.Exit(1)
+    console.print(f"[green]OK[/green] domain pack: {path}")
+
+@spec_app.command("compile")
+def spec_compile(spec: Path, output: Path = Path("recipe.yaml")) -> None:
+    """Compile a human-authored Markdown spec into an ExecutionRecipe."""
+    from .spec_compiler import compile_spec, write_recipe
+
+    try:
+        recipe = compile_spec(spec)
+        write_recipe(recipe, output)
+    except (OSError, ValueError) as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(1) from exc
+    console.print(f"Recipe: {output}")
+    console.print("Next: decretum validate <recipe.yaml>")
 
 
 @app.command()
@@ -131,7 +167,7 @@ def compile_contract(recipe: Path, output: Path | None = None) -> None:
         for item in errors:
             console.print(f"[red]ERROR[/red] {item}")
         raise typer.Exit(1)
-    contract = compile_recipe(data, Path("artifacts") / data["id"])
+    contract = compile_execution_contract(data, Path("artifacts") / data["id"])
     path = write_contract(contract)
     if output:
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -151,7 +187,7 @@ def handoff(contract: Path) -> None:
     if missing:
         console.print(f"[red]ERROR[/red] contract missing fields: {', '.join(missing)}")
         raise typer.Exit(1)
-    if data["kind"] not in {"ExecutionContract", "ResearchExecutionContract"}:
+    if data["kind"] not in {"ExecutionContract"}:
         console.print("[red]ERROR[/red] unsupported contract kind")
         raise typer.Exit(1)
     envelope = {

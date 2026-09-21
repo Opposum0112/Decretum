@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Declarative intent → deterministic execution contract → agent / harness</strong>
+  <strong>Declarative intent → schema → capability resolution → recipe → deterministic execution contract → agent / harness</strong>
 </p>
 
 <p align="center">
@@ -16,11 +16,11 @@
 
 # Decretum
 
-> **Decretum turns structured intent into a deterministic execution contract for agents and harnesses.**
+> **Decretum turns human intent into a validated Recipe and deterministic Execution Contract for agents and harnesses.**
 
-Decretum is a **domain-neutral Declarative Execution Compiler**. It combines schemas, recipes, profiles, provider/integration registries, discovery, validation, policy, and deterministic resolution to produce a portable **Execution Contract**.
+Decretum is a **domain-neutral Declarative Execution Compiler**. It accepts a human-friendly `spec.md`, compiles it into a schema-governed specification and **ExecutionRecipe**, resolves each required capability to an available provider/integration/harness execution path, then compiles the resolved Recipe into a portable **Execution Contract**.
 
-Security research is Decretum's reference domain, not its architectural boundary. The same compiler model can describe software engineering, infrastructure automation, data engineering, incident response, scientific experiments, and other reproducible technical work.
+Decretum is domain-neutral. The same compiler model can describe software engineering, infrastructure automation, data engineering, incident response, scientific experiments, and other reproducible technical work.
 
 ## Architecture
 
@@ -38,7 +38,8 @@ Recipe       = what should be done
 Profile      = execution characteristics and preferences
 Registry     = available implementations
 Resolver     = deterministic capability binding
-Compiler     = portable contract generation
+Spec Compiler = spec.md → ExecutionRecipe
+Contract Compiler = ExecutionRecipe → ExecutionContract
 Harness      = actual execution and interaction
 Store        = persistent execution/research memory
 ```
@@ -49,20 +50,25 @@ The important separation is:
                     DECRETUM
           Declarative Execution Compiler
                        |
-       +---------------+---------------+
-       |               |               |
-    Schema           Recipe          Profile
-   "what"           "do"            "how"
-       |               |               |
-       +---------------+---------------+
-                       |
-                    Resolver
-                       |
-     capability + provider + integration
-       + harness + readiness + policy
+                       v
+              Specification / Schema
                        |
                        v
-               Execution Contract
+               Capability Resolver
+                       |
+       +---------------+---------------+
+       |               |               |
+    Provider       Integration      Harness
+       |               |               |
+       +---------------+---------------+
+                       |
+              Resolved Capability Plan
+                       |
+                       v
+                    Recipe
+                       |
+                       v
+              Execution Contract
                        |
                        v
               External Harness/Agent
@@ -78,11 +84,11 @@ The important separation is:
 
 ## Domain packs
 
-The compiler core is domain-neutral. Domain-specific semantics live in registries and schemas rather than compiler branches.
+The compiler core is domain-neutral. Domain-specific semantics live in installable domain packs, registries and schemas rather than compiler branches.
 
 Examples:
 
-- **Security research** — malware, network, forensics, detection and cloud investigation
+- **Technical domains** — malware, network, forensics, detection and cloud investigation
 - **Software engineering** — source changes, dependencies, tests, builds and containers
 - **Infrastructure** — VM, container, network and deployment requirements
 - **Data engineering** — datasets, transforms, validation and artifacts
@@ -90,20 +96,42 @@ Examples:
 
 A domain pack contributes capabilities, schemas, recipes, profiles and provider metadata. It does not change the core resolver/compiler semantics.
 
+### Install a domain pack
+
+Domain packs are independent Python packages:
+
+```bash
+uv pip install -e packages/decretum-software-engineering
+# or
+uv pip install -e packages/decretum-security-research
+decretum spec packs
+```
+
+The core package contains no security-research capability/provider/profile registry. The installed pack supplies those resources through the `decretum.domain_packs` entry point.
+
 ## Why structured contracts instead of broad markdown specifications?
 
-Markdown is excellent for explanation. It is not a deterministic execution interface.
+Markdown is excellent for human authoring. It is not by itself a deterministic execution interface. Decretum therefore treats `spec.md` as a frontend, not as the execution boundary.
 
 Decretum separates:
 
 ```
-human intent
+spec.md / human intent
     |
     v
-structured schema + recipe + profile
+Spec Compiler
+    |
+    v
+Canonical Specification + Recipe
+    |
+    v
+Schema validation
     |
     v
 validated resolution
+    |
+    v
+Execution Contract Compiler
     |
     v
 portable execution contract
@@ -161,14 +189,14 @@ profiles:
 
 The recipe describes **intent**. The profile expresses **preferences**. The provider registry determines **what is actually available**.
 
-## Security research reference example
+## Domain-neutral reference example
 
 ```yaml
-id: suspicious-network-investigation
-name: Suspicious Network Investigation
+id: technical-investigation-example
+name: Technical Investigation Example
 version: "1.0"
-role: threat_researcher
-objective: Determine whether the sample creates unexpected network activity.
+role: operator
+objective: Determine whether a workload produces the expected runtime behavior.
 
 capabilities:
   - process.observe
@@ -184,17 +212,16 @@ The recipe does not contain Lima/Docker lifecycle, MCP implementation, agent pro
 
 ## End-to-end workflow
 
-1. Define structured intent.
-2. Reference canonical capabilities.
-3. Select profiles/preferences.
-4. Validate the recipe.
-5. Discover available execution surfaces.
-6. Resolve capability → provider → integration → harness.
-7. Check readiness and policy.
-8. Compile the Execution Contract.
-9. Hand the contract to the external harness.
-10. The harness executes, interacts, and persists its state.
-11. If requirements change, return to Decretum and compile a new contract.
+1. Author `spec.md` or define a structured Recipe directly.
+2. Compile `spec.md` into a canonical, schema-governed specification and `ExecutionRecipe`.
+3. Validate the Recipe against the applicable schema and canonical capabilities.
+4. Resolve each capability to a concrete provider, integration, harness and invocation path.
+5. Check readiness, compatibility and policy.
+6. Produce the resolved Capability Plan.
+7. Compile the resolved Recipe into the deterministic Execution Contract.
+8. Hand the contract to the external harness.
+9. The harness executes, interacts, and persists its state.
+10. If requirements change, return to Decretum and produce a new Recipe/Contract pair.
 
 **Decretum does not perform steps 9–10.**
 
@@ -222,10 +249,12 @@ Discovery can propose a capability, but it cannot silently mutate canonical sema
 git clone https://github.com/Opposum0112/Decretum.git
 cd Decretum
 uv sync
-decretum capabilities discover
-decretum validate recipes/<recipe>.yaml
-decretum resolve recipes/<recipe>.yaml
-decretum compile recipes/<recipe>.yaml
+uv pip install -e packages/decretum-software-engineering
+decretum spec packs
+decretum spec compile examples/spec.md --output recipe.yaml
+decretum validate recipe.yaml
+decretum resolve recipe.yaml
+decretum compile recipe.yaml
 ```
 
 Nothing in Decretum's validate/resolve/compile path executes the work.
@@ -235,17 +264,19 @@ Nothing in Decretum's validate/resolve/compile path executes the work.
 ```
 Capability
     |
-Provider
+Provider candidates
     |
-Integration
-    |
-Execution surface
+Integration / interface
     |
 Harness compatibility
+    |
+Invocation / execution mode
     |
 Host/provider readiness
     |
 Policy compatibility
+    |
+Resolved Capability Plan
     |
 READY / BLOCKED
 ```
@@ -282,6 +313,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md), [docs/execution-contract.md](docs/execut
 
 - [Introduction](INTRO.md) — problem, positioning and workflow
 - [Architecture](ARCHITECTURE.md) — system boundary and invariants
+- [Markdown Spec Compiler](docs/spec-compiler.md) — human-friendly specification frontend
 - [Execution Contract](docs/execution-contract.md) — interoperability specification
 - [Domain model](docs/domain-model.md) — core concepts and domain packs
 - [Contributing](CONTRIBUTING.md) — development and extension rules
@@ -314,11 +346,16 @@ Decretum/
 │   ├── capability_registry.yaml
 │   ├── provider_registry.yaml
 │   ├── profile_registry.yaml
-│   └── sec_research_metamodel.yaml   # reference security domain
+│   ├── specification.schema.yaml
+│   ├── recipe.schema.yaml
+│   ├── capability_implementation.schema.yaml
+│   └── execution_contract.schema.yaml
+├── examples/
+│   └── spec.md
 ├── recipes/
 ├── docs/
 │   └── domain-model.md
-├── sec_agent/
+├── decretum/
 │   ├── capability_registry.py
 │   ├── capability_discovery.py
 │   ├── profile_registry.py
@@ -367,3 +404,34 @@ See [CONTRIBUTORS.md](CONTRIBUTORS.md) and [AI_ASSISTANCE.md](AI_ASSISTANCE.md) 
 
 For general project questions or bug reports, you may contact the maintainer at **maamtest18@gmail.com**. Please do not send passwords, API keys, credentials, private data, or undisclosed security vulnerabilities by email; use the security reporting process for vulnerabilities.
 
+
+
+## Domain Packs
+
+Decretum is extensible through **Domain Packs**: installable Python packages that contribute domain schemas, canonical capabilities, profiles, provider metadata, recipes and documentation without modifying the domain-neutral core.
+
+```text
+Contributor
+   |
+   v
+Domain Pack (Python package)
+   |
+   +-- schemas
+   +-- capabilities
+   +-- profiles
+   +-- recipes
+   +-- docs
+   |
+   v
+Decretum discovery / validation
+   |
+   v
+Recipe -> Capability Resolution -> Execution Contract
+```
+
+A contributor can validate and inspect packs with:
+
+    decretum spec validate-pack ./my-domain-pack
+    decretum spec packs
+
+See docs/domain-packs.md for the package contract and contributor workflow.

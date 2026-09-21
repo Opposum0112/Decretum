@@ -15,14 +15,14 @@ dependencies = [
 ]
 
 [project.scripts]
-decretum = "sec_agent.cli:app"
+decretum = "decretum.cli:app"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["sec_agent"]
+packages = ["decretum"]
 
 [tool.ruff]
 target-version = "py311"
@@ -36,3 +36,4 @@ dev = [
   "pytest>=8.0",
   "ruff>=0.6",
 ]
+

@@ -1,4 +1,4 @@
-"""Load and validate researcher configuration profiles.
+"""Load and validate execution configuration profiles.
 
 Profiles are preferences/configuration only. They never create or redefine
 canonical capabilities.
@@ -10,12 +10,12 @@ from typing import Any
 
 import yaml
 
-DEFAULT_PROFILE_REGISTRY = Path(__file__).resolve().parents[1] / "schema" / "profile_registry.yaml"
+DEFAULT_PROFILE_REGISTRY = None
 PROFILE_TYPES = {"infrastructure", "instrumentation", "harness"}
 
 
-def load_profile_registry(path: Path = DEFAULT_PROFILE_REGISTRY) -> dict[str, Any]:
-    value = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+def load_profile_registry(path: Path | None = DEFAULT_PROFILE_REGISTRY, domain: str | None = None) -> dict[str, Any]:
+    if path is None:\n        from .domain_packs import resource_for_domain\n        path = resource_for_domain(domain, "profiles") / "profile_registry.yaml"\n    if path.is_dir(): path = path / "profile_registry.yaml"\n    value = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(value, dict):
         raise ValueError("profile registry must be a mapping")
     for section in PROFILE_TYPES:
@@ -24,10 +24,10 @@ def load_profile_registry(path: Path = DEFAULT_PROFILE_REGISTRY) -> dict[str, An
     return value
 
 
-def get_profile(profile_type: str, profile_id: str, path: Path = DEFAULT_PROFILE_REGISTRY) -> dict[str, Any]:
+def get_profile(profile_type: str, profile_id: str, path: Path | None = DEFAULT_PROFILE_REGISTRY, domain: str | None = None) -> dict[str, Any]:
     if profile_type not in PROFILE_TYPES:
         raise ValueError(f"unsupported profile type: {profile_type}")
-    registry = load_profile_registry(path)
+    registry = load_profile_registry(path, domain=domain)
     profile = (registry.get(profile_type) or {}).get(profile_id)
     if not isinstance(profile, dict):
         raise KeyError(f"{profile_type} profile {profile_id!r} is not registered")
@@ -36,7 +36,7 @@ def get_profile(profile_type: str, profile_id: str, path: Path = DEFAULT_PROFILE
     return profile
 
 
-def resolve_recipe_profiles(recipe: dict[str, Any], path: Path = DEFAULT_PROFILE_REGISTRY) -> dict[str, Any]:
+def resolve_recipe_profiles(recipe: dict[str, Any], path: Path | None = DEFAULT_PROFILE_REGISTRY) -> dict[str, Any]:
     """Resolve profile references without changing the recipe's experiment semantics."""
     result: dict[str, Any] = {"references": {}, "profiles": {}}
     refs = {
@@ -48,14 +48,14 @@ def resolve_recipe_profiles(recipe: dict[str, Any], path: Path = DEFAULT_PROFILE
         if not profile_id:
             continue
         result["references"][profile_type] = profile_id
-        result["profiles"][profile_type] = get_profile(profile_type, profile_id, path)
+        result["profiles"][profile_type] = get_profile(profile_type, profile_id, path, recipe.get("domain"))
     return result
 
 
-def validate_recipe_profiles(recipe: dict[str, Any], path: Path = DEFAULT_PROFILE_REGISTRY) -> list[str]:
+def validate_recipe_profiles(recipe: dict[str, Any], path: Path | None = DEFAULT_PROFILE_REGISTRY) -> list[str]:
     errors: list[str] = []
     try:
-        registry = load_profile_registry(path)
+        registry = load_profile_registry(path, domain=recipe.get("domain"))
     except (OSError, ValueError, yaml.YAMLError) as exc:
         return [f"profile registry unavailable: {exc}"]
 

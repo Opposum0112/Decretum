@@ -1,14 +1,14 @@
 from pathlib import Path
 
-from sec_agent.compiler import compile_recipe
-from sec_agent.validator import (
+from decretum.compiler import compile_execution_contract
+from decretum.validator import (
     load_recipe,
     structural_validate,
     validate_capability_providers,
     registry_errors,
 )
 
-RECIPE = Path("recipes/openai-hosted-malware-analysis.yaml")
+RECIPE = Path("recipes/example-execution-recipe.yaml")
 
 
 def test_recipe_is_valid():
@@ -18,17 +18,17 @@ def test_recipe_is_valid():
 
 def test_compiler_produces_deterministic_contract():
     recipe = load_recipe(RECIPE)
-    a = compile_recipe(recipe, Path("artifacts/test"))
-    b = compile_recipe(recipe, Path("artifacts/test"))
+    a = compile_execution_contract(recipe, Path("artifacts/test"))
+    b = compile_execution_contract(recipe, Path("artifacts/test"))
     assert a.contract_id == b.contract_id
     assert a.contract["kind"] == "ExecutionContract"
-    assert a.contract["domain"] == "security_research"
+    assert a.contract["domain"] == "software_engineering"
     assert "process.execute" in a.contract["capabilities"]
 
 
 def test_compiled_contract_is_harness_handoff_only():
     recipe = load_recipe(RECIPE)
-    contract = compile_recipe(recipe, Path("artifacts/test-contract"))
+    contract = compile_execution_contract(recipe, Path("artifacts/test-contract"))
     assert contract.contract["handoff"]["target"] == "external_harness_runtime"
     assert contract.contract["handoff"]["mode"] == "contract_only"
     assert contract.contract["handoff"]["decretum_stops_after_compilation"] is True
@@ -94,7 +94,7 @@ def test_registry_declares_harnesses_integrations_and_models():
 
 
 def test_recipe_uses_independent_profiles():
-    recipe = load_recipe(Path("recipes/suspicious-network-investigation.yaml"))
+    recipe = load_recipe(Path("packages/decretum-security-research/decretum_security_research/recipes/suspicious-network-investigation.yaml"))
     assert structural_validate(recipe) == []
     assert validate_capability_providers(recipe) == []
     assert recipe["infrastructure_profile"] == "isolated-linux-vm"
@@ -106,7 +106,7 @@ def test_recipe_uses_independent_profiles():
 
 def test_contract_has_frozen_external_runtime_boundary():
     recipe = load_recipe(RECIPE)
-    contract = compile_recipe(recipe, Path("artifacts/test-boundary"))
+    contract = compile_execution_contract(recipe, Path("artifacts/test-boundary"))
     handoff = contract.contract["handoff"]
     assert handoff["target"] == "external_harness_runtime"
     assert handoff["decretum_stops_after_compilation"] is True
@@ -116,9 +116,9 @@ def test_contract_has_frozen_external_runtime_boundary():
 
 
 def test_harness_adapter_only_prepares_handoff():
-    from sec_agent.harness_adapters import get_adapter
+    from decretum.harness_adapters import get_adapter
     recipe = load_recipe(RECIPE)
-    contract = compile_recipe(recipe, Path("artifacts/test-adapter"))
+    contract = compile_execution_contract(recipe, Path("artifacts/test-adapter"))
     adapter = get_adapter(contract.contract["execution"]["harness"])
     envelope = adapter.prepare(contract.contract)
     assert envelope["type"] == "execution_handoff"

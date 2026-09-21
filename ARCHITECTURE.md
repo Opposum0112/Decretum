@@ -30,7 +30,7 @@ Decretum does **not**:
 
 ## Domain neutrality
 
-Security research is the current reference domain, not the compiler's architectural boundary.
+Decretum has no privileged reference domain; domain-specific semantics belong in installable domain packs.
 
 The core compiler must not contain domain-specific execution branches. Domain-specific semantics belong in domain packs:
 
@@ -46,7 +46,6 @@ Core
   policy
   compiler
        |
-       +---- Security research pack
        +---- Software engineering pack
        +---- Infrastructure pack
        +---- Data/experiment pack
@@ -58,9 +57,18 @@ A domain pack can add semantics without turning the core into a domain-specific 
 ## Structured intent model
 
 ```
+Human spec.md
+  |
+  +--> optional human-friendly frontend
+  |
+  v
+Spec Compiler
+  |
+  +--> produces structured ExecutionRecipe
+
 Schema
   |
-  +--> defines semantic vocabulary
+  +--> validates specification, Recipe, capability implementations and Execution Contract
 
 Recipe
   |
@@ -76,11 +84,11 @@ Registry
 
 Resolver
   |
-  +--> binds intent to available execution surfaces
+  +--> binds each required capability to provider, integration, harness and invocation
 
-Compiler
+Execution Contract Compiler
   |
-  +--> emits portable Execution Contract
+  +--> compiles the validated Recipe into a portable Execution Contract
 ```
 
 The same recipe can be compiled against different profiles and provider availability without changing its semantic intent.
@@ -88,14 +96,16 @@ The same recipe can be compiled against different profiles and provider availabi
 ## Handoff
 
 ```
-Recipe
-  -> Decretum
+spec.md (optional)
+  -> Spec Compiler
+  -> ExecutionRecipe
+  -> validate / resolve
   -> Execution Contract
   -> External Harness / Agent Runtime
   -> External Store
 ```
 
-The contract is the interoperability boundary.
+The Recipe is the logical execution plan. Capability resolution determines how each required capability can actually be supplied by the available execution ecosystem. The Execution Contract is then compiled from that resolved Recipe and becomes the deterministic handoff artifact. The contract is the interoperability boundary.
 
 ## Iterative execution loop
 
@@ -129,7 +139,7 @@ The runtime must not silently redefine Decretum's capability semantics.
 
 The canonical conceptual contract is **Execution Contract**.
 
-The current security-domain implementation may retain `ResearchExecutionContract` as a compatibility representation while the contract format evolves. New domain-neutral implementations should use a domain-neutral kind and carry explicit domain/intent metadata rather than encoding the domain into the compiler boundary.
+The canonical contract representation is domain-neutral and carries explicit domain/intent metadata without encoding a domain into the compiler boundary.
 
 ## Contribution guardrail
 
@@ -163,3 +173,74 @@ Harness/runtime projects should implement:
 ![Decretum architecture](docs/assets/decretum-architecture.svg)
 
 The diagram shows the intended boundary: Decretum compiles intent into a deterministic contract; the external agent or harness owns reasoning and execution, while persistent state remains external.
+
+
+## Spec -> Recipe -> Contract boundary
+
+The preferred compilation pipeline is:
+
+    spec.md
+       |
+       v
+    Spec Compiler
+       |
+       v
+    ExecutionRecipe
+       |
+       v
+    Schema Validation
+       |
+       v
+    Capability / Provider / Integration / Harness Resolution
+       |
+       v
+    Execution Contract Compiler
+       |
+       v
+    Execution Contract
+       |
+       v
+    External Harness / Agent Runtime
+
+`spec.md` is an authoring format for humans. It is not treated as an executable contract and the compiler does not infer new canonical capabilities from arbitrary prose.
+
+The Recipe is the declarative execution plan: it describes the intended outcome, capabilities, inputs, outputs, profiles and step dependencies.
+
+The Execution Contract is compiled only after the Recipe is validated and resolved. It records concrete resolution, readiness, policy, provenance, the Recipe digest and the handoff boundary.
+
+This separation permits the same Recipe to produce different contracts when provider, harness or host availability changes while preserving the semantic intent of the Recipe.
+
+If a runtime needs a new capability or changed requirement, the flow returns to the Recipe/Decretum compilation boundary rather than silently mutating the existing contract.
+
+
+## Domain Pack Extension Boundary
+
+Domain Packs are the extension mechanism for domain-specific semantics. A pack is an independently versioned package discovered through the `decretum.domain_packs` Python entry-point group. It can supply schemas, capabilities, profiles, provider metadata, recipes and documentation. Core compilation, validation, resolution and contract semantics remain domain-neutral.
+
+    Domain Pack Package
+          |
+          v
+    Pack Manifest / Discovery
+          |
+          v
+    Domain Schema + Canonical Capabilities + Profiles
+          |
+          v
+    ExecutionRecipe
+          |
+          v
+    Generic Decretum Resolver / Execution Contract Compiler
+          |
+          v
+    Execution Contract
+
+This keeps new domains composable and reviewable while preventing domain-specific logic from leaking into the core compiler.
+
+
+## Two-stage compilation boundary
+
+Decretum separates authoring compilation from execution-contract compilation:
+
+`spec.md` → **Spec Compiler** → `ExecutionRecipe` → **Execution Contract Compiler** → `ExecutionContract` → external runtime.
+
+The **Execution Contract Compiler** is core compiler logic. `ExecutionContract` is only its deterministic output artifact; it does not contain compiler logic and is not a runtime.
