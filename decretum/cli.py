@@ -64,6 +64,7 @@ def list_capabilities() -> None:
 @capabilities_app.command("approve")
 def approve_capability(
     capability_id: str = typer.Argument(...),
+    domain: str = typer.Option(..., "--domain", help="Domain provided by the installed domain pack."),
     candidate_file: Path = typer.Option(Path("artifacts/capability-discovery/capability-candidates.yaml"), "--candidate"),
     kind: str = typer.Option(..., "--kind"),
     risk: str = typer.Option(..., "--risk"),
@@ -91,7 +92,7 @@ def approve_capability(
         "allowed_execution_modes": allowed_execution_mode,
     }
     try:
-        promote_capability(spec)
+        promote_capability(spec, domain=domain)
     except ValueError as exc:
         console.print(f"[red]ERROR[/red] {exc}")
         raise typer.Exit(1) from exc
