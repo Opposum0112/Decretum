@@ -59,6 +59,8 @@ def compile_recipe(
     registry_snapshot = snapshot_registry(registry_path, artifact_dir)
     schema_path = Path(__file__).resolve().parent.parent / "schema" / "sec_research_metamodel.yaml" if recipe.get("domain", "security_research") == "security_research" else None
     resolution = resolve_capabilities(recipe, registry_path)
+    recipe_canonical = {k: v for k, v in recipe.items() if not k.startswith("_")}
+    recipe_digest = hashlib.sha256(json.dumps(recipe_canonical, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     steps = _experiment_steps(recipe)
     experiment_graph = {
         "steps": steps,
@@ -97,6 +99,8 @@ def compile_recipe(
         "contract_version": "5",
         "contract_id": "",
         "capabilities": sorted(required_capabilities(recipe, registry_path)),
+        "recipe_digest": recipe_digest,
+        "spec_source": recipe.get("_spec_source", {}),
         "profiles": resolution.get("profiles", {}),
         "experiment_graph": experiment_graph,
         "execution": {
