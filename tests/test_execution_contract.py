@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from decretum.compiler import compile_recipe
+from decretum.compiler import compile_execution_contract
 from decretum.validator import load_recipe, structural_validate, validate_recipe
 
 RECIPE = Path("recipes/example-execution-recipe.yaml")
@@ -15,7 +15,7 @@ def test_reference_recipe_validates():
 
 def test_compiler_emits_domain_neutral_execution_contract():
     recipe = load_recipe(RECIPE)
-    contract = compile_recipe(recipe, Path("artifacts/test"))
+    contract = compile_execution_contract(recipe, Path("artifacts/test"))
     assert contract.contract["kind"] == "ExecutionContract"
     assert contract.contract["contract_version"] == "5"
     assert contract.contract["recipe_digest"]
@@ -25,15 +25,15 @@ def test_compiler_emits_domain_neutral_execution_contract():
 
 def test_compilation_is_deterministic():
     recipe = load_recipe(RECIPE)
-    a = compile_recipe(recipe, Path("artifacts/test-a"))
-    b = compile_recipe(recipe, Path("artifacts/test-b"))
+    a = compile_execution_contract(recipe, Path("artifacts/test-a"))
+    b = compile_execution_contract(recipe, Path("artifacts/test-b"))
     assert a.contract_id == b.contract_id
     assert a.contract["plan_digest"] == b.contract["plan_digest"]
 
 
 def test_handoff_is_runtime_neutral():
     recipe = load_recipe(RECIPE)
-    contract = compile_recipe(recipe, Path("artifacts/test-handoff"))
+    contract = compile_execution_contract(recipe, Path("artifacts/test-handoff"))
     envelope = {
         "protocol": "decretum.dev/v1",
         "type": "execution_handoff",
