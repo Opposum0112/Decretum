@@ -3,14 +3,14 @@
 <defs><linearGradient id="a" x1="0" x2="1"><stop stop-color="#73e0b5"/><stop offset="1" stop-color="#7aa7ff"/></linearGradient><marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0 9 3 0 6Z" fill="#7aa7ff"/></marker></defs>
 <rect width="1200" height="720" rx="36" fill="#070a0f"/>
 <text x="70" y="70" font-family="Inter,Segoe UI,sans-serif" font-size="28" font-weight="800" fill="#edf2f7">Decretum — declarative execution compiler</text>
-<text x="70" y="105" font-family="Inter,Segoe UI,sans-serif" font-size="17" fill="#98a6b8">Deterministic execution boundary; reasoning and runtime execution remain external.</text>
+<text x="70" y="105" font-family="Inter,Segoe UI,sans-serif" font-size="17" fill="#98a6b8">Schema-governed intent, capability resolution and deterministic execution boundary; runtime execution remains external.</text>
 <g font-family="Inter,Segoe UI,sans-serif" text-anchor="middle">
 <rect x="70" y="165" width="220" height="110" rx="18" fill="#111925" stroke="#202b3a"/>
 <text x="180" y="205" font-size="18" font-weight="800" fill="#73e0b5">KNOWLEDGE</text><text x="180" y="233" font-size="14" fill="#98a6b8">schemas • standards</text><text x="180" y="255" font-size="14" fill="#98a6b8">domain semantics</text>
 <rect x="350" y="165" width="220" height="110" rx="18" fill="#111925" stroke="#202b3a"/>
-<text x="460" y="205" font-size="18" font-weight="800" fill="#73e0b5">INTENT</text><text x="460" y="233" font-size="14" fill="#98a6b8">recipe • profile</text><text x="460" y="255" font-size="14" fill="#98a6b8">constraints • preferences</text>
+<text x="460" y="205" font-size="18" font-weight="800" fill="#73e0b5">INTENT</text><text x="460" y="233" font-size="14" fill="#98a6b8">spec.md • recipe • profile</text><text x="460" y="255" font-size="14" fill="#98a6b8">constraints • preferences</text>
 <rect x="630" y="135" width="300" height="170" rx="22" fill="#0d1817" stroke="#73e0b5"/>
-<text x="780" y="175" font-size="21" font-weight="900" fill="#edf2f7">DECRETUM</text><text x="780" y="205" font-size="14" fill="#73e0b5">validate • discover • resolve</text><text x="780" y="229" font-size="14" fill="#98a6b8">capability → provider</text><text x="780" y="251" font-size="14" fill="#98a6b8">integration → harness</text><text x="780" y="273" font-size="14" fill="#98a6b8">readiness • policy • provenance</text>
+<text x="780" y="175" font-size="21" font-weight="900" fill="#edf2f7">DECRETUM</text><text x="780" y="205" font-size="14" fill="#73e0b5">schema • validate • resolve • compile</text><text x="780" y="229" font-size="14" fill="#98a6b8">capability → provider → invocation</text><text x="780" y="251" font-size="14" fill="#98a6b8">integration → harness → readiness</text><text x="780" y="273" font-size="14" fill="#98a6b8">recipe → contract • policy • provenance</text>
 <rect x="990" y="165" width="140" height="110" rx="18" fill="#111925" stroke="#202b3a"/>
 <text x="1060" y="205" font-size="16" font-weight="800" fill="#73e0b5">CONTRACT</text><text x="1060" y="233" font-size="13" fill="#98a6b8">portable</text><text x="1060" y="255" font-size="13" fill="#98a6b8">deterministic</text>
 <path d="M290 220h50" stroke="#7aa7ff" stroke-width="3" marker-end="url(#m)"/><path d="M570 220h55" stroke="#7aa7ff" stroke-width="3" marker-end="url(#m)"/><path d="M930 220h50" stroke="#7aa7ff" stroke-width="3" marker-end="url(#m)"/>
