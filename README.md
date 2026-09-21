@@ -20,7 +20,7 @@
 
 Decretum is a **domain-neutral Declarative Execution Compiler**. It can accept a human-friendly `spec.md`, compile it into a structured **ExecutionRecipe**, validate and resolve its capabilities, then compile that Recipe into a portable **Execution Contract**.
 
-Security research is Decretum's reference domain, not its architectural boundary. The same compiler model can describe software engineering, infrastructure automation, data engineering, incident response, scientific experiments, and other reproducible technical work.
+Decretum is domain-neutral. The same compiler model can describe software engineering, infrastructure automation, data engineering, incident response, scientific experiments, and other reproducible technical work.
 
 ## Architecture
 
@@ -164,14 +164,14 @@ profiles:
 
 The recipe describes **intent**. The profile expresses **preferences**. The provider registry determines **what is actually available**.
 
-## Security research reference example
+## Domain-neutral reference example
 
 ```yaml
-id: suspicious-network-investigation
-name: Suspicious Network Investigation
+id: technical-investigation-example
+name: Technical Investigation Example
 version: "1.0"
-role: threat_researcher
-objective: Determine whether the sample creates unexpected network activity.
+role: operator
+objective: Determine whether a workload produces the expected runtime behavior.
 
 capabilities:
   - process.observe
@@ -225,7 +225,7 @@ git clone https://github.com/Opposum0112/Decretum.git
 cd Decretum
 uv sync
 decretum capabilities discover
-decretum spec-compile spec.md --output recipe.yaml
+decretum spec compile spec.md --output recipe.yaml
 decretum validate recipe.yaml
 decretum resolve recipes/<recipe>.yaml
 decretum compile recipes/<recipe>.yaml
@@ -324,7 +324,7 @@ Decretum/
 ├── recipes/
 ├── docs/
 │   └── domain-model.md
-├── sec_agent/
+├── decretum/
 │   ├── capability_registry.py
 │   ├── capability_discovery.py
 │   ├── profile_registry.py
