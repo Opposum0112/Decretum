@@ -62,7 +62,7 @@ Human spec.md
   +--> optional human-friendly frontend
   |
   v
-Spec Execution Contract Compiler
+Spec Compiler
   |
   +--> produces structured ExecutionRecipe
 
@@ -97,7 +97,7 @@ The same recipe can be compiled against different profiles and provider availabi
 
 ```
 spec.md (optional)
-  -> Spec Execution Contract Compiler
+  -> Spec Compiler
   -> ExecutionRecipe
   -> validate / resolve
   -> Execution Contract
@@ -182,7 +182,7 @@ The preferred compilation pipeline is:
     spec.md
        |
        v
-    Spec Execution Contract Compiler
+    Spec Compiler
        |
        v
     ExecutionRecipe
@@ -194,7 +194,7 @@ The preferred compilation pipeline is:
     Capability / Provider / Integration / Harness Resolution
        |
        v
-    Recipe
+    Execution Contract Compiler
        |
        v
     Execution Contract
