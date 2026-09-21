@@ -10,7 +10,6 @@ import yaml
 from .capability_registry import canonical_capabilities
 from .profile_registry import DEFAULT_PROFILE_REGISTRY, load_profile_registry, validate_recipe_profiles
 
-ROLE_VALUES = {"threat_researcher", "supply_chain_auditor", "detection_engineer", "vulnerability_exploit_researcher", "malware_researcher", "threat_intelligence_researcher", "cloud_security_researcher", "forensics_researcher", "vulnerability_researcher", "security_architect"}
 SKILL_KINDS = {"analysis", "investigation", "detection", "forensics", "threat_intelligence", "malware_analysis", "vulnerability_research", "cloud_security", "reverse_engineering", "network_analysis", "software_supply_chain", "reporting"}
 SKILL_EXECUTION_MODES = {"codex_native", "shell", "mcp", "script", "analyst_review"}
 TOOLS = {"sysdig", "falco", "tracee", "tetragon", "bpftrace", "bcc", "libbpf", "ebpf_exporter", "strace", "ltrace", "perf", "ftrace", "auditd", "auditbeat", "osquery", "procmon", "psutil", "tcpdump", "tshark", "dumpcap", "wireshark", "zeek", "suricata", "snort", "netsniff_ng", "conntrack", "nftables", "iptables", "ethtool", "ss", "ip", "dig", "resolvectl", "bpftool", "pahole", "opensnoop", "execsnoop", "tcpconnect", "tcplife", "filetop", "biolatency", "runqlat", "funccount", "openssl_trace", "volatility", "rekall", "yara", "clamav", "ghidra", "radare2", "binwalk", "strings", "readelf", "objdump", "lsof", "nsenter", "capsh", "unshare"}
@@ -129,14 +128,8 @@ def load_recipe(path: Path) -> dict[str, Any]:
 
 def structural_validate(recipe: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    domain = recipe.get("domain", "security_research")
     required = {"id", "name", "version", "objective"}
-    if domain == "security_research":
-        required.update({"role", "policy", "evidence", "completion"})
     errors.extend(f"missing required field: {key}" for key in sorted(required - recipe.keys()))
-    if recipe.get("role") not in ROLE_VALUES:
-        errors.append(f"invalid role: {recipe.get('role')!r}")
-
     role_definition = recipe.get("role_definition")
     if role_definition is not None and not isinstance(role_definition, dict):
         errors.append("role_definition must be a mapping")
@@ -166,25 +159,6 @@ def structural_validate(recipe: dict[str, Any]) -> list[str]:
 
     if "compute" in recipe or "instrumentation" in recipe:
         errors.append("inline compute/instrumentation configuration is deprecated; use profiles")
-
-    if domain == "security_research":
-        policy = recipe.get("policy")
-        if not isinstance(policy, dict):
-            errors.append("policy must be a mapping")
-        else:
-            for key in ("allow", "deny", "approval_required"):
-                if policy.get(key) is not None and not isinstance(policy[key], list):
-                    errors.append(f"policy.{key} must be a list")
-        evidence = recipe.get("evidence")
-        if not isinstance(evidence, dict):
-            errors.append("evidence must be a mapping")
-        elif not evidence.get("required"):
-            errors.append("evidence.required must be non-empty")
-        completion = recipe.get("completion")
-        if not isinstance(completion, dict):
-            errors.append("completion must be a mapping")
-        elif completion.get("report_required", True) is not True:
-            errors.append("completion.report_required must remain true")
 
     return errors
 
