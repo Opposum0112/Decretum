@@ -94,7 +94,7 @@ def test_registry_declares_harnesses_integrations_and_models():
 
 
 def test_recipe_uses_independent_profiles():
-    recipe = load_recipe(Path("recipes/suspicious-network-investigation.yaml"))
+    recipe = load_recipe(Path("packages/decretum-security-research/decretum_security_research/recipes/suspicious-network-investigation.yaml"))
     assert structural_validate(recipe) == []
     assert validate_capability_providers(recipe) == []
     assert recipe["infrastructure_profile"] == "isolated-linux-vm"
