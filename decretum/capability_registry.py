@@ -1,6 +1,6 @@
 """Canonical capability registry and explicit promotion workflow.
 
-Discovery may propose candidates, but only an explicit researcher action can
+Discovery may propose candidates, but only an explicit domain-authoring action can
 promote a capability into the canonical recipe vocabulary.
 """
 from __future__ import annotations
