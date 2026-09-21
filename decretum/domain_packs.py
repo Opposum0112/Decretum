@@ -1,12 +1,14 @@
-"""Discover and validate installable Decretum domain packs."""
+"""Discover and resolve installable Decretum domain packs."""
 from __future__ import annotations
 from importlib.metadata import entry_points
 from pathlib import Path
 from typing import Any
+import os
 import yaml
 
 ENTRY_POINT_GROUP = "decretum.domain_packs"
 REQUIRED_MANIFEST_FIELDS = {"apiVersion", "kind", "id", "name", "version", "domains"}
+RESOURCE_KEYS = {"schema", "capabilities", "providers", "profiles", "recipes"}
 
 def discover_domain_packs() -> list[dict[str, Any]]:
     discovered = []
@@ -49,8 +51,34 @@ def validate_pack_directory(path: Path) -> list[str]:
         if not (path / relative).exists(): errors.append(f"domain pack should contain {relative}/")
     return errors
 
+def _matches(pack: dict[str, Any], domain: str | None) -> bool:
+    if not domain:
+        return True
+    return domain in (pack.get("domains") or []) or domain == pack.get("id")
+
+def domain_pack_for_domain(domain: str | None = None) -> dict[str, Any]:
+    packs = [p for p in discover_domain_packs() if not p.get("error") and _matches(p, domain)]
+    requested = os.getenv("DECRETUM_DOMAIN_PACK")
+    if requested:
+        packs = [p for p in packs if p.get("id") == requested or p.get("entry_point") == requested]
+    if not packs:
+        raise LookupError(f"no installed Decretum domain pack provides domain {domain!r}")
+    if len(packs) > 1:
+        ids = ", ".join(str(p.get("id")) for p in packs)
+        raise LookupError(f"multiple domain packs provide {domain!r}: {ids}; set DECRETUM_DOMAIN_PACK")
+    return packs[0]
+
+def resource_path(pack: dict[str, Any], resource: str) -> Path:
+    if resource not in RESOURCE_KEYS:
+        raise ValueError(f"unsupported domain-pack resource: {resource}")
+    resources = pack.get("resources") or {}
+    value = resources.get(resource)
+    if not value:
+        raise ValueError(f"domain pack {pack.get('id')!r} does not expose resource {resource!r}")
+    return Path(value)
+
+def resource_for_domain(domain: str, resource: str) -> Path:
+    return resource_path(domain_pack_for_domain(domain), resource)
+
 def installed_pack_summary() -> list[dict[str, Any]]:
-    result = []
-    for pack in discover_domain_packs():
-        result.append({"id": pack.get("id"), "name": pack.get("name"), "version": pack.get("version"), "domains": pack.get("domains"), "distribution": pack.get("distribution"), "status": "error" if pack.get("error") else "ready", "error": pack.get("error")})
-    return result
+    return [{"id": p.get("id"), "name": p.get("name"), "version": p.get("version"), "domains": p.get("domains"), "distribution": p.get("distribution"), "status": "error" if p.get("error") else "ready", "error": p.get("error")} for p in discover_domain_packs()]
