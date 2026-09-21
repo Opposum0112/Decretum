@@ -1,6 +1,6 @@
 # Execution Contract
 
-The **Execution Contract** is Decretum's interoperability boundary.
+The **Execution Contract** is Decretum's deterministic interoperability artifact and handoff boundary.
 
 It is the deterministic artifact handed from Decretum to an external agent or harness runtime.
 
@@ -30,12 +30,12 @@ The runtime consumes the contract. It does not redefine its semantics.
         Recipe + Profile + Registry State
                   |
                   v
-              Decretum
+        Execution Contract Compiler
                   |
-          validate / resolve
+        validate / resolve / compile
                   |
                   v
-        Deterministic Contract
+          ExecutionContract
                   |
                   v
           Agent / Harness
@@ -92,3 +92,10 @@ The canonical conceptual kind is:
     kind: ExecutionContract
 
 The current security reference implementation may expose compatibility metadata for the historical ResearchExecutionContract representation. New domain-neutral contracts should use ExecutionContract.
+
+
+## Compiler boundary
+
+The **Execution Contract Compiler** lives in Decretum core and transforms an `ExecutionRecipe` plus resolved registry state into an `ExecutionContract`. The contract is the compiler's output; it does not contain the compiler and is not executable code.
+
+The public Python entry point is `compile_execution_contract()`. The historical `compile_recipe()` name remains as a backward-compatible alias.
