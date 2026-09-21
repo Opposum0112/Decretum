@@ -15,7 +15,7 @@ PROFILE_TYPES = {"infrastructure", "instrumentation", "harness"}
 
 
 def load_profile_registry(path: Path | None = DEFAULT_PROFILE_REGISTRY, domain: str | None = None) -> dict[str, Any]:
-    if path is None:\n        from .domain_packs import resource_for_domain\n        path = resource_for_domain(domain or "security_research", "profiles") / "profile_registry.yaml"\n    if path.is_dir(): path = path / "profile_registry.yaml"\n    value = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if path is None:\n        from .domain_packs import resource_for_domain\n        path = resource_for_domain(domain, "profiles") / "profile_registry.yaml"\n    if path.is_dir(): path = path / "profile_registry.yaml"\n    value = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(value, dict):
         raise ValueError("profile registry must be a mapping")
     for section in PROFILE_TYPES:
