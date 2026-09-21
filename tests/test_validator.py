@@ -1,14 +1,14 @@
 from pathlib import Path
 
-from sec_agent.compiler import compile_recipe
-from sec_agent.validator import (
+from decretum.compiler import compile_recipe
+from decretum.validator import (
     load_recipe,
     structural_validate,
     validate_capability_providers,
     registry_errors,
 )
 
-RECIPE = Path("recipes/openai-hosted-malware-analysis.yaml")
+RECIPE = Path("recipes/example-execution-recipe.yaml")
 
 
 def test_recipe_is_valid():
@@ -22,7 +22,7 @@ def test_compiler_produces_deterministic_contract():
     b = compile_recipe(recipe, Path("artifacts/test"))
     assert a.contract_id == b.contract_id
     assert a.contract["kind"] == "ExecutionContract"
-    assert a.contract["domain"] == "security_research"
+    assert a.contract["domain"] == "software_engineering"
     assert "process.execute" in a.contract["capabilities"]
 
 
@@ -116,7 +116,7 @@ def test_contract_has_frozen_external_runtime_boundary():
 
 
 def test_harness_adapter_only_prepares_handoff():
-    from sec_agent.harness_adapters import get_adapter
+    from decretum.harness_adapters import get_adapter
     recipe = load_recipe(RECIPE)
     contract = compile_recipe(recipe, Path("artifacts/test-adapter"))
     adapter = get_adapter(contract.contract["execution"]["harness"])
