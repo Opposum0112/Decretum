@@ -1,4 +1,4 @@
-"""Load and validate researcher configuration profiles.
+"""Load and validate execution configuration profiles.
 
 Profiles are preferences/configuration only. They never create or redefine
 canonical capabilities.
