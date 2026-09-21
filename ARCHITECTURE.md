@@ -30,7 +30,7 @@ Decretum does **not**:
 
 ## Domain neutrality
 
-Security research is the current reference domain, not the compiler's architectural boundary.
+Decretum has no privileged reference domain; domain-specific semantics belong in installable domain packs.
 
 The core compiler must not contain domain-specific execution branches. Domain-specific semantics belong in domain packs:
 
@@ -46,7 +46,6 @@ Core
   policy
   compiler
        |
-       +---- Security research pack
        +---- Software engineering pack
        +---- Infrastructure pack
        +---- Data/experiment pack
@@ -140,7 +139,7 @@ The runtime must not silently redefine Decretum's capability semantics.
 
 The canonical conceptual contract is **Execution Contract**.
 
-The current security-domain implementation may retain `ResearchExecutionContract` as a compatibility representation while the contract format evolves. New domain-neutral implementations should use a domain-neutral kind and carry explicit domain/intent metadata rather than encoding the domain into the compiler boundary.
+The canonical contract representation is domain-neutral and carries explicit domain/intent metadata without encoding a domain into the compiler boundary.
 
 ## Contribution guardrail
 
