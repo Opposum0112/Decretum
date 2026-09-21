@@ -96,6 +96,22 @@ def approve_capability(
     console.print("Provider implementations still require explicit registration.")
 
 
+
+@app.command("spec-compile")
+def spec_compile(spec: Path, output: Path = Path("recipe.yaml")) -> None:
+    """Compile a human-authored Markdown spec into an ExecutionRecipe."""
+    from .spec_compiler import compile_spec, write_recipe
+
+    try:
+        recipe = compile_spec(spec)
+        write_recipe(recipe, output)
+    except (OSError, ValueError) as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(1) from exc
+    console.print(f"Recipe: {output}")
+    console.print("Next: decretum validate <recipe.yaml>")
+
+
 @app.command()
 def validate(recipe: Path) -> None:
     """Validate a recipe; nothing is executed."""
