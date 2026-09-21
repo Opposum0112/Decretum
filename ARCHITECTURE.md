@@ -68,7 +68,7 @@ Spec Compiler
 
 Schema
   |
-  +--> defines semantic vocabulary
+  +--> validates specification, Recipe, capability implementations and Execution Contract
 
 Recipe
   |
@@ -84,7 +84,7 @@ Registry
 
 Resolver
   |
-  +--> binds intent to available execution surfaces
+  +--> binds each required capability to provider, integration, harness and invocation
 
 Compiler
   |
@@ -105,7 +105,7 @@ spec.md (optional)
   -> External Store
 ```
 
-The Recipe is the logical execution plan. The Execution Contract is the resolved, deterministic and enforceable handoff artifact. The contract is the interoperability boundary.
+The Recipe is the logical execution plan. Capability resolution determines how each required capability can actually be supplied by the available execution ecosystem. The Execution Contract is then compiled from that resolved Recipe and becomes the deterministic handoff artifact. The contract is the interoperability boundary.
 
 ## Iterative execution loop
 
