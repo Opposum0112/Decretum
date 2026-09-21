@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from sec_agent.domain_packs import load_pack_manifest, validate_domain_pack_manifest, validate_pack_directory
+from decretum.domain_packs import load_pack_manifest, validate_domain_pack_manifest, validate_pack_directory
 
 PACK = Path("examples/domain-pack")
 
