@@ -1,0 +1,45 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://decretum.dev/schema/execution-contract
+title: Decretum Execution Contract
+type: object
+required:
+  - apiVersion
+  - kind
+  - contract_version
+  - contract_id
+  - domain
+  - intent
+  - capabilities
+  - recipe_digest
+  - execution
+  - handoff
+properties:
+  apiVersion:
+    const: decretum.dev/v1
+  kind:
+    const: ExecutionContract
+  contract_version:
+    type: string
+  contract_id:
+    type: string
+  domain:
+    type: string
+  intent:
+    type: object
+    required: [id, name, objective]
+  capabilities:
+    type: array
+    items: {type: string}
+  recipe_digest:
+    type: string
+  spec_source:
+    type: object
+  execution:
+    type: object
+  handoff:
+    type: object
+    required: [target, mode, decretum_stops_after_compilation]
+  provider_registry_snapshot:
+    type: object
+  compilation_manifest:
+    type: object
