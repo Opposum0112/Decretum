@@ -1,4 +1,4 @@
-"""Resolve canonical capabilities using independent researcher profiles."""
+"""Resolve capabilities into concrete provider/integration/harness execution surfaces."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -115,12 +115,28 @@ def resolve_capabilities(
                 "readiness": readiness_item.get("checks", []),
                 "execution_surface": surface,
                 "execution_surface_ready": surface_ready,
+                "invocation": {
+                    "interface": interface_type,
+                    "transport": provider.get("interface", {}),
+                    "execution_modes": provider.get("execution_modes", []) or [],
+                },
                 "compatibility": compat,
                 "policy_compatible": annotated["policy_compatible"],
                 "policy": annotated["policy"],
             })
         status = "ready" if any(p["ready"] and p["policy_compatible"] for p in candidates) else ("registered" if candidates else "unavailable")
-        item = {"capability": cap, "status": status, "providers": candidates}
+        ready_candidates = [
+            p for p in candidates
+            if p["ready"] and p["policy_compatible"]
+        ]
+        ready_candidates.sort(key=lambda p: (not p["preferred"], p["provider"], p["interface"]))
+        selected = ready_candidates[0] if ready_candidates else None
+        item = {
+            "capability": cap,
+            "status": status,
+            "providers": candidates,
+            "selected": selected,
+        }
         capabilities.append(item)
         capability_map[cap] = item
 
@@ -131,6 +147,18 @@ def resolve_capabilities(
     return {
         "status": "ready" if not failures and all(s["ready"] for s in steps) else "needs_prerequisites",
         "capabilities": capabilities,
+        "capability_plan": [
+            {
+                "capability": item["capability"],
+                "status": item["status"],
+                "provider": (item["selected"] or {}).get("provider"),
+                "interface": (item["selected"] or {}).get("interface"),
+                "harnesses": (item["selected"] or {}).get("harnesses", []),
+                "invocation": (item["selected"] or {}).get("invocation", {}),
+                "integrations": (item["selected"] or {}).get("integrations", []),
+            }
+            for item in capabilities
+        ],
         "experiment_plan": steps,
         "failures": failures,
         "profiles": {
