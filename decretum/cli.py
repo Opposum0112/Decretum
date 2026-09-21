@@ -14,7 +14,7 @@ from rich.table import Table
 
 from .capability_discovery import discover_capability_surfaces, write_candidate_yaml, write_discovery_report
 from .capability_registry import canonical_capabilities, candidate, promote_capability
-from .compiler import compile_recipe, write_contract
+from .compiler import compile_execution_contract, write_contract
 from .domain_packs import installed_pack_summary, validate_pack_directory
 from .resolver import resolve_capabilities
 from .validator import validate_recipe
@@ -167,7 +167,7 @@ def compile_contract(recipe: Path, output: Path | None = None) -> None:
         for item in errors:
             console.print(f"[red]ERROR[/red] {item}")
         raise typer.Exit(1)
-    contract = compile_recipe(data, Path("artifacts") / data["id"])
+    contract = compile_execution_contract(data, Path("artifacts") / data["id"])
     path = write_contract(contract)
     if output:
         output.parent.mkdir(parents=True, exist_ok=True)
