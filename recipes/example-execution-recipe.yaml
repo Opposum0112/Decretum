@@ -1,0 +1,21 @@
+apiVersion: decretum.dev/v1
+kind: ExecutionRecipe
+domain: software_engineering
+id: example-execution
+name: Example Execution
+version: "1.0"
+objective: Build and validate a small service.
+capabilities:
+  - source.read
+  - source.modify
+  - test.execute
+infrastructure_profile: local-dev
+harness_profile: coding-agent
+experiments:
+  - id: implement
+    objective: Implement the requested change.
+    capabilities: [source.read, source.modify]
+  - id: validate
+    objective: Run validation.
+    capabilities: [test.execute]
+    depends_on: [implement]
