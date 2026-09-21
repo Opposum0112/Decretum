@@ -1,4 +1,8 @@
-# Compile a Markdown spec into a Decretum ExecutionRecipe.
+"""Compile explicit Markdown intent into a schema-valid ExecutionRecipe.
+
+Markdown is an authoring frontend. The compiler does not infer new capabilities;
+canonical capabilities and execution implementations are resolved later.
+"""
 from __future__ import annotations
 
 import hashlib
@@ -103,6 +107,8 @@ def compile_spec(path: Path) -> dict[str, Any]:
     experiments = _experiments(sections.get("experiments", (0, []))[1])
     if experiments:
         recipe["experiments"] = experiments
+    recipe["_artifact"] = "ExecutionRecipe"
+    recipe["_schema"] = "schema/recipe.schema.yaml"
     recipe["_source_path"] = str(path)
     recipe["_spec_source"] = {"file": str(path), "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "sections": {key: {"line": line} for key, (line, _) in sections.items()}}
     return recipe
