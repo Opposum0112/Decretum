@@ -186,7 +186,7 @@ def handoff(contract: Path) -> None:
     if missing:
         console.print(f"[red]ERROR[/red] contract missing fields: {', '.join(missing)}")
         raise typer.Exit(1)
-    if data["kind"] not in {"ExecutionContract", "ResearchExecutionContract"}:
+    if data["kind"] not in {"ExecutionContract"}:
         console.print("[red]ERROR[/red] unsupported contract kind")
         raise typer.Exit(1)
     envelope = {
