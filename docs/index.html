@@ -3,92 +3,98 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Decretum — a domain-neutral declarative execution compiler for agents and harnesses.">
-<title>Decretum — Declarative Execution for Agents</title>
+<meta name="description" content="Decretum — a domain-neutral declarative execution compiler that turns structured intent into portable execution contracts.">
+<title>Decretum — Declarative Execution Compiler</title>
 <style>
-:root{--bg:#070a0f;--panel:#0d121a;--panel2:#111925;--text:#edf2f7;--muted:#98a6b8;--line:#202b3a;--accent:#73e0b5;--accent2:#7aa7ff;--max:1120px}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 15% 0%,#14251f 0,transparent 35%),radial-gradient(circle at 90% 10%,#15213b 0,transparent 32%),var(--bg);color:var(--text);font:16px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-a{color:inherit;text-decoration:none}.wrap{max-width:var(--max);margin:auto;padding:0 24px}.nav{height:72px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff0d}.brand{font-weight:800;letter-spacing:.08em}.brand span{color:var(--accent)}.links{display:flex;gap:22px;color:var(--muted);font-size:14px}.links a:hover{color:var(--text)}
-.hero{padding:105px 0 85px}.eyebrow{display:inline-flex;gap:8px;align-items:center;border:1px solid #73e0b533;background:#73e0b50d;color:var(--accent);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700}.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px var(--accent)}
-h1{font-size:clamp(48px,8vw,92px);line-height:.98;letter-spacing:-.055em;margin:24px 0 24px;max-width:900px}h1 em{font-style:normal;color:var(--accent)}.lead{font-size:clamp(18px,2.4vw,24px);color:var(--muted);max-width:790px}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px}.btn{padding:12px 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-weight:700}.btn.primary{background:var(--accent);border-color:var(--accent);color:#07110d}.btn:hover{transform:translateY(-1px)}
-.hero-card{margin-top:60px;border:1px solid var(--line);background:#0b1119dd;border-radius:18px;padding:24px;box-shadow:0 24px 80px #0008}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:center}.node{padding:18px 12px;text-align:center;border:1px solid var(--line);background:var(--panel2);border-radius:12px;font-weight:750}.node small{display:block;color:var(--muted);font-weight:500;margin-top:4px}.arrow{text-align:center;color:var(--accent2);font-size:22px}
-section{padding:76px 0}.section-head{max-width:700px;margin-bottom:30px}.kicker{text-transform:uppercase;letter-spacing:.16em;color:var(--accent);font-size:12px;font-weight:800}h2{font-size:38px;letter-spacing:-.03em;margin:8px 0 12px}.sub{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{border:1px solid var(--line);background:linear-gradient(180deg,#101823,#0b1017);border-radius:16px;padding:24px}.card h3{margin:0 0 8px;font-size:19px}.card p{margin:0;color:var(--muted)}.num{color:var(--accent);font:700 13px ui-monospace,monospace}
-pre{overflow:auto;background:#05080c;border:1px solid var(--line);border-radius:14px;padding:22px;color:#d8e1eb}code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}.split{display:grid;grid-template-columns:1fr 1fr;gap:20px}.quote{border-left:3px solid var(--accent);padding-left:20px;font-size:24px;line-height:1.4}.footer{padding:42px 0 65px;border-top:1px solid var(--line);color:var(--muted);display:flex;justify-content:space-between;gap:20px}
-@media(max-width:800px){.links{display:none}.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}.grid,.split{grid-template-columns:1fr}.hero{padding-top:70px}h1{font-size:54px}.footer{display:block}}
+:root{--bg:#080b12;--panel:#101621;--panel2:#141c29;--text:#edf2f7;--muted:#9aa8ba;--line:#263244;--accent:#8b7cff;--accent2:#62d7ff;--max:1080px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 15% 0%,#17152c 0,transparent 34%),radial-gradient(circle at 90% 8%,#102532 0,transparent 30%),var(--bg);color:var(--text);font:16px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+a{color:inherit;text-decoration:none}.wrap{max-width:var(--max);margin:auto;padding:0 24px}.nav{height:72px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff10}.brand{font-weight:800;letter-spacing:.08em}.brand span{color:var(--accent)}.links{display:flex;gap:20px;color:var(--muted);font-size:14px}.links a:hover{color:var(--text)}
+.hero{padding:100px 0 80px}.eyebrow{display:inline-flex;padding:5px 10px;border:1px solid #8b7cff55;border-radius:999px;color:#c7c0ff;font-size:13px}.hero h1{font-size:clamp(42px,7vw,76px);line-height:1.02;letter-spacing:-.045em;max-width:850px;margin:20px 0}.hero h1 em{font-style:normal;color:var(--accent)}.hero p{max-width:720px;color:var(--muted);font-size:19px}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}.btn{padding:11px 17px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-weight:650}.btn.primary{background:var(--text);color:#080b12;border-color:var(--text)}
+section{padding:72px 0;border-top:1px solid #ffffff0c}h2{font-size:30px;margin:0 0 12px;letter-spacing:-.025em}.lead{color:var(--muted);max-width:760px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:28px}.card{background:linear-gradient(145deg,#111824,#0d131d);border:1px solid var(--line);border-radius:14px;padding:23px}.card h3{margin:0 0 7px}.card p{margin:0;color:var(--muted)}.num{font:700 12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--accent2);letter-spacing:.08em}
+.arch{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch;margin-top:30px}.flow{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.node{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font:600 13px ui-monospace,monospace}.arrow{color:var(--accent)}.boundary{border:1px dashed #8b7cff66;border-radius:14px;padding:22px}.boundary strong{color:#c7c0ff}.code{background:#070a0f;border:1px solid var(--line);border-radius:12px;padding:18px;overflow:auto;font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cbd5e1}.code .key{color:#8b7cff}.code .str{color:#8fdcff}.code .comment{color:#64748b}
+.callout{margin-top:26px;padding:20px 22px;border-left:3px solid var(--accent);background:#111725;border-radius:0 10px 10px 0;color:#d9e0ea}.tags{display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}.tag{border:1px solid var(--line);padding:7px 11px;border-radius:999px;color:#b7c3d2;font-size:13px}
+footer{padding:35px 0 50px;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}@media(max-width:720px){.links{display:none}.hero{padding:72px 0 55px}.grid,.arch{grid-template-columns:1fr}section{padding:55px 0}.hero p{font-size:17px}}
 </style>
 </head>
 <body>
-<header class="wrap nav"><a class="brand" href="#top">DECRET<span>UM</span></a><nav class="links"><a href="#model">Model</a><a href="#workflow">Workflow</a><a href="#capabilities">Capabilities</a><a href="https://github.com/Opposum0112/Decretum">GitHub ↗</a></nav></header>
-<main id="top">
-<section class="wrap hero">
-<div class="eyebrow"><span class="dot"></span> DECLARATIVE EXECUTION COMPILER</div>
-<h1>Intent in.<br><em>Contract out.</em></h1>
-<p class="lead">Decretum bridges structured specifications and agentic execution. It resolves capabilities, providers, integrations, prerequisites and harness compatibility into a deterministic Execution Contract — then hands execution to the runtime.</p>
-<div class="actions"><a class="btn primary" href="https://github.com/Opposum0112/Decretum">Explore the repository</a><a class="btn" href="#workflow">See how it works</a></div>
-<div class="hero-card"><div class="flow">
-<div class="node">Intent<small>structured request</small></div><div class="arrow">→</div>
-<div class="node">Decretum<small>validate + resolve</small></div><div class="arrow">→</div>
-<div class="node">Contract<small>deterministic handoff</small></div>
-</div><div style="height:10px"></div><div class="flow">
-<div class="node">Agent / Harness<small>reason + execute</small></div><div class="arrow">→</div>
-<div class="node">Providers<small>tools • APIs • MCP</small></div><div class="arrow">→</div>
-<div class="node">External Store<small>state + evidence</small></div>
+<div class="wrap">
+<nav class="nav"><a class="brand" href="#"><span>DE</span>CRETUM</a><div class="links"><a href="#model">Model</a><a href="#architecture">Architecture</a><a href="#example">Example</a><a href="#status">Status</a></div></nav>
+
+<header class="hero">
+<div class="eyebrow">Beta · Hobby / Open Source</div>
+<h1>Structured intent.<br><em>Deterministic execution contracts.</em></h1>
+<p>Decretum is a domain-neutral declarative execution compiler. It turns structured intent, schemas, recipes, profiles and available capabilities into a portable machine-readable contract for an external harness or agent to execute.</p>
+<div class="actions"><a class="btn primary" href="https://github.com/Opposum0112/Decretum">View on GitHub</a><a class="btn" href="https://github.com/Opposum0112/Decretum/issues">Issues &amp; discussion</a></div>
+</header>
+
+<section>
+<h2>The problem</h2>
+<p class="lead">Execution requirements often end up scattered across scripts, documentation, environment assumptions and provider-specific integrations. That makes workflows harder to validate, reproduce and reason about before anything actually runs.</p>
+<div class="grid">
+<div class="card"><div class="num">01 / DEFINE</div><h3>Capture intent</h3><p>Represent what a workflow requires without hard-coding the runtime that will execute it.</p></div>
+<div class="card"><div class="num">02 / RESOLVE</div><h3>Bind capabilities</h3><p>Discover available implementations and deterministically resolve requirements against a registry and profile.</p></div>
+<div class="card"><div class="num">03 / CONTRACT</div><h3>Make execution explicit</h3><p>Emit a portable contract containing the resolved execution boundary, rather than silently executing anything.</p></div>
+<div class="card"><div class="num">04 / DELEGATE</div><h3>Leave runtime outside</h3><p>An external harness or agent owns execution, interaction, persistence, evidence and reporting.</p></div>
+</div>
+</section>
+
+<section id="model">
+<h2>The model</h2><p class="lead">Four declarative inputs describe the semantic and execution requirements; the compiler turns them into a resolved contract.</p>
+<div class="grid">
+<div class="card"><h3>Schema</h3><p>Defines the semantic boundaries and valid structure of a domain.</p></div>
+<div class="card"><h3>Recipe</h3><p>Describes what should be done: the intended workflow or experiment.</p></div>
+<div class="card"><h3>Profile</h3><p>Expresses execution characteristics, preferences and constraints.</p></div>
+<div class="card"><h3>Registry</h3><p>Describes available providers, capabilities and implementations.</p></div>
+</div>
+</section>
+
+<section id="architecture">
+<h2>Compile, don't execute</h2>
+<p class="lead">The architectural boundary is deliberate: Decretum resolves intent into an execution contract and then stops.</p>
+<div class="arch">
+<div class="card"><div class="flow">
+<span class="node">Schema</span><span class="arrow">→</span><span class="node">Recipe</span><span class="arrow">→</span><span class="node">Profile</span><span class="arrow">→</span><span class="node">Registry</span><span class="arrow">→</span><span class="node">Validate</span><span class="arrow">→</span><span class="node">Discover</span><span class="arrow">→</span><span class="node">Resolve</span><span class="arrow">→</span><span class="node">Policy</span><span class="arrow">→</span><span class="node">Contract</span>
 </div></div>
+<div class="boundary"><strong>Decretum stops here.</strong><p class="lead">The external harness / agent consumes the execution contract and performs the real work. Storage, evidence, session state and reporting remain outside the compiler.</p></div>
+</div>
+<div class="callout"><strong>Define in Decretum. Execute in the harness. Remember in the store.</strong></div>
 </section>
 
-<section id="model" class="wrap">
-<div class="section-head"><div class="kicker">The model</div><h2>Semantic intent. Deterministic handoff.</h2><p class="sub">Knowledge and specifications define meaning. Decretum compiles that intent into a concrete execution boundary. Agents and harnesses own reasoning and execution.</p></div>
+<section id="example">
+<h2>Small example</h2><p class="lead">A recipe can express a security research workflow without embedding the implementation details of the execution environment.</p>
+<div class="code"><span class="key">name</span>: <span class="str">web-research-experiment</span>
+<span class="key">domain</span>: <span class="str">security-research</span>
+<span class="key">requirements</span>:
+  - <span class="str">isolated_compute</span>
+  - <span class="str">network_capture</span>
+  - <span class="str">evidence_integrity</span>
+<span class="key">policy</span>:
+  <span class="key">approval</span>: <span class="str">required</span>
+
+<span class="comment"># Decretum resolves these requirements into a machine-readable contract.</span>
+<span class="comment"># A separate harness decides how to execute that contract.</span></div>
+</section>
+
+<section>
+<h2>Domain-neutral by design</h2><p class="lead">Security research is a reference domain, not the architectural boundary. The same compilation model can describe other structured execution workflows.</p>
+<div class="tags"><span class="tag">Security research</span><span class="tag">Software engineering</span><span class="tag">Infrastructure</span><span class="tag">Data engineering</span><span class="tag">Scientific experiments</span><span class="tag">Technical workflows</span></div>
+</section>
+
+<section>
+<h2>Decretum + Cusimanse</h2><p class="lead">The projects occupy complementary boundaries.</p>
 <div class="grid">
-<div class="card"><span class="num">01 / SCHEMA</span><h3>What is possible</h3><p>LinkML defines roles, skills, capabilities, evidence and references as reusable research vocabulary.</p></div>
-<div class="card"><span class="num">02 / RECIPE</span><h3>What is allowed</h3><p>A recipe declares the investigation's required capabilities, constraints and execution boundary.</p></div>
-<div class="card"><span class="num">03 / CONTRACT</span><h3>What is frozen</h3><p>Validation and compilation turn the recipe into a machine-readable research contract.</p></div>
-<div class="card"><span class="num">04 / AGENT</span><h3>How to investigate</h3><p>The autonomous researcher selects and composes declared skills instead of silently expanding scope.</p></div>
-<div class="card"><span class="num">05 / PROVIDERS</span><h3>How capabilities run</h3><p>MCP, APIs and local tools can implement the same semantic capability interchangeably.</p></div>
-<div class="card"><span class="num">06 / STATE</span><h3>What survives</h3><p>Evidence, hypotheses, findings, experiments and reports remain available for continued research.</p></div>
+<div class="card"><h3>Decretum</h3><p>Structured intent → deterministic capability resolution → portable execution contract.</p></div>
+<div class="card"><h3>Cusimanse</h3><p>Research requirements → controlled disposable execution → collected, verified and preserved evidence.</p></div>
 </div>
 </section>
 
-<section id="workflow" class="wrap">
-<div class="section-head"><div class="kicker">Execution loop</div><h2>From intent to execution.</h2></div>
-<div class="split"><div>
-<p class="quote">“Specification defines meaning · Recipe declares intent · Decretum resolves execution · Contract freezes the handoff.”</p>
-<p class="sub">A capability can evolve independently of its implementation. New providers, integrations and model families can be registered without changing the meaning of existing recipes.</p>
-</div>
-<pre><code>Research question
-      ↓
-Research recipe
-      ↓
-LinkML validation
-      ↓
-Capability resolution
-      ↓
-Contract compilation
-      ↓
-Autonomous research
-      ↓
-Experiments + evidence
-      ↓
-Findings + report
-      ↓
-Persistent research state
-      ↺</code></pre></div>
+<section id="status">
+<h2>Project status</h2>
+<p class="lead">Decretum is a beta hobby / open-source project, actively evolving and developed in spare time. It is experimental and not positioned as production-ready software.</p>
+<div class="actions"><a class="btn primary" href="https://github.com/Opposum0112/Decretum">Source repository</a><a class="btn" href="https://github.com/Opposum0112/Decretum/issues">Report an issue</a></div>
 </section>
 
-<section id="capabilities" class="wrap">
-<div class="section-head"><div class="kicker">Capability fabric</div><h2>Semantic capabilities, interchangeable implementations.</h2><p class="sub">A recipe does not need to encode a specific tool, API, VM or harness. Registries and resolution determine what can satisfy it.</p></div>
-<div class="grid">
-<div class="card"><h3>Process observation</h3><p>Sysdig · Falco · Tracee · Tetragon · bpftrace · BCC · strace · auditd</p></div>
-<div class="card"><h3>Network capture</h3><p>tcpdump · tshark · Wireshark · Zeek · Suricata · Snort</p></div>
-<div class="card"><h3>Binary analysis</h3><p>Ghidra · radare2 · binwalk · readelf · objdump</p></div>
-<div class="card"><h3>Memory analysis</h3><p>Volatility · Rekall and other registered implementations</p></div>
-<div class="card"><h3>Local compute</h3><p>Unix · Docker · Podman · Lima · Incus · LXC · KVM · Firecracker · QEMU</p></div>
-<div class="card"><h3>Domain packs</h3><p>Security research · software engineering · infrastructure · data · scientific workflows</p></div>
+<footer><span>Decretum · Declarative Execution Compiler</span><span>Define in Decretum. Execute in the harness. Remember in the store.</span></footer>
 </div>
-</section>
-
-<section class="wrap">
-<div class="hero-card"><div class="kicker">Start here</div><h2 style="margin-top:8px">Compile the boundary. Then let the runtime move.</h2><p class="sub">Validate intent, resolve capability readiness, compile the contract and hand it to your agent or harness.</p><div class="actions"><a class="btn primary" href="https://github.com/Opposum0112/Decretum#quick-start">Quick start</a><a class="btn" href="https://github.com/Opposum0112/Decretum/blob/main/README.md">Read the docs</a></div></div>
-</section>
-</main>
-<footer class="wrap footer"><div><strong style="color:var(--text)">Decretum</strong><br>Declarative execution contracts for agents and harnesses.</div><div><a href="https://github.com/Opposum0112/Decretum">GitHub</a> · <a href="https://github.com/Opposum0112/Decretum/blob/main/README.md">Documentation</a></div></footer>
-</body></html>
+</body>
+</html>
